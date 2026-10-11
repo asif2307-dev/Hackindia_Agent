@@ -9,7 +9,6 @@ import { AiSearchBar } from '../components/travel/AiSearchBar';
 import { MultiServiceBookingPanel, ServiceTab } from '../components/travel/MultiServiceBookingPanel';
 import { PromotionalOffers } from '../components/travel/PromotionalOffers';
 import { PopularDestinations } from '../components/travel/PopularDestinations';
-import { FloatingSectionNav } from '../components/travel/FloatingSectionNav';
 import { AiChatbotDrawer } from '../components/travel/AiChatbotDrawer';
 
 export const LandingPage: React.FC = () => {
@@ -756,7 +755,7 @@ export const LandingPage: React.FC = () => {
               </div>
               <span className="text-xl text-white font-black font-['Plus_Jakarta_Sans']">Agent Travel</span>
               <span className="text-[10px] font-bold uppercase tracking-widest px-1.5 py-0.5 rounded bg-[#E8B86D] text-[#0d283e]">
-                VOYAGE
+                YATRA
               </span>
             </div>
             <p className="text-xs text-white/70 max-w-md mt-1 leading-relaxed">
@@ -812,13 +811,7 @@ export const LandingPage: React.FC = () => {
         </div>
       </footer>
 
-      {/* 10. Pill-Shaped Floating Navigation Bar (How It Works, Features, Refund Engine) */}
-      <FloatingSectionNav
-        activeSection={activeSection}
-        onNavigateSection={scrollToSection}
-      />
-
-      {/* 11. Floating AI Assistant Chatbot */}
+      {/* Floating AI Assistant Chatbot */}
       <AiChatbotDrawer />
     </div>
   );

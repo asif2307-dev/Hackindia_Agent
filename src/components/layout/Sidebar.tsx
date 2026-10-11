@@ -1,5 +1,5 @@
 import React from 'react';
-import { NavLink, useLocation } from 'react-router-dom';
+import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 
 interface SidebarProps {
   isOpen?: boolean;
@@ -8,6 +8,7 @@ interface SidebarProps {
 
 export const Sidebar: React.FC<SidebarProps> = ({ isOpen = false, onClose }) => {
   const location = useLocation();
+  const navigate = useNavigate();
 
   const navItems = [
     {
@@ -55,34 +56,41 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen = false, onClose }) => 
       )}
 
       <aside
-        className={`fixed left-0 top-0 h-full w-64 bg-surface-container-lowest shadow-[0_1px_8px_rgba(0,0,0,0.04)] z-50 flex flex-col justify-between py-space-md transition-transform duration-200 lg:translate-x-0 ${
+        className={`fixed left-0 top-0 bottom-0 w-64 bg-gradient-to-b from-[#0c2438] via-[#081e2e] to-[#061622] text-white border-r border-[#006D77]/20 shadow-2xl z-40 flex flex-col justify-between py-space-md transition-transform duration-200 lg:translate-x-0 ${
           isOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
-        <div className="flex flex-col gap-space-lg">
-          {/* Brand Header */}
-          <div className="px-space-lg flex items-center justify-between h-10">
-            <NavLink
-              to="/"
-              className="flex items-center gap-space-sm group"
+        <div className="flex flex-col gap-space-md">
+          {/* Back Button (Replaces Agent Travel YATRA Audit Console) */}
+          <div className="px-space-md flex items-center justify-between h-12 border-b border-white/10 pb-2">
+            <button
+              type="button"
               onClick={() => {
                 onClose?.();
-                window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+                navigate('/');
               }}
+              className="flex items-center gap-2.5 px-3 py-2 rounded-xl bg-white/10 hover:bg-[#20B8B0]/20 text-white hover:text-[#20B8B0] border border-white/15 hover:border-[#20B8B0]/40 transition-all group w-full cursor-pointer shadow-xs"
+              title="Back to Agent Travel Homepage"
             >
-              <div className="w-8 h-8 rounded-lg bg-primary-container flex items-center justify-center text-on-primary-container font-bold shadow-xs group-hover:scale-105 transition-transform">
-                <span className="material-symbols-outlined text-[20px]">smart_toy</span>
-              </div>
-              <span className="font-headline-sm text-headline-sm text-on-surface tracking-tight font-bold">
-                Agent Travel
+              <span className="w-7 h-7 rounded-lg bg-white/10 group-hover:bg-[#20B8B0] group-hover:text-[#0d283e] flex items-center justify-center transition-colors">
+                <span className="material-symbols-outlined text-[18px]">arrow_back</span>
               </span>
-            </NavLink>
+              <div className="flex flex-col text-left">
+                <span className="text-xs font-bold tracking-tight text-white group-hover:text-[#20B8B0] font-['Plus_Jakarta_Sans'] flex items-center gap-1">
+                  Back to Home
+                </span>
+                <span className="text-[10px] text-white/60 group-hover:text-white/80">
+                  Return to Travel Portal
+                </span>
+              </div>
+            </button>
 
             {/* Mobile Close Button */}
             <button
               type="button"
               onClick={onClose}
-              className="lg:hidden p-1 rounded-md text-on-surface-variant hover:text-on-surface"
+              className="lg:hidden ml-2 p-1.5 rounded-lg text-white/70 hover:text-white hover:bg-white/10"
+              aria-label="Close menu"
             >
               <span className="material-symbols-outlined text-[20px]">close</span>
             </button>
@@ -90,13 +98,13 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen = false, onClose }) => 
 
           {/* Navigation Links */}
           <div className="flex flex-col gap-1">
-            <div className="px-space-lg pb-1">
-              <span className="font-label-sm text-label-sm uppercase tracking-wider text-outline font-semibold">
+            <div className="px-space-md pb-1">
+              <span className="text-[10px] uppercase tracking-wider text-[#20B8B0]/80 font-bold">
                 Audit Operations
               </span>
             </div>
 
-            <nav className="flex flex-col gap-space-xs px-space-sm">
+            <nav className="flex flex-col gap-1 px-space-sm">
               {navItems.map((item) => {
                 const isActive =
                   item.activeExact
@@ -114,16 +122,18 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen = false, onClose }) => 
                       window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
                     }}
                     data-path={dataPath}
-                    className={`flex items-center gap-space-sm px-space-md py-space-sm rounded-xl font-label-md text-label-md transition-all ${
+                    className={`flex items-center gap-space-sm px-space-md py-2 rounded-xl text-xs sm:text-sm transition-all ${
                       isActive
-                        ? 'bg-primary-container text-on-primary-container font-semibold shadow-sm'
-                        : 'text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface'
+                        ? 'bg-gradient-to-r from-[#006D77] to-[#20B8B0] text-white font-bold shadow-md shadow-[#006D77]/40 ring-1 ring-[#20B8B0]/40'
+                        : 'text-white/75 hover:bg-white/10 hover:text-white font-medium'
                     }`}
                   >
-                    <span className="material-symbols-outlined text-[20px]">{item.icon}</span>
+                    <span className={`material-symbols-outlined text-[19px] ${isActive ? 'text-white' : 'text-[#20B8B0]'}`}>
+                      {item.icon}
+                    </span>
                     <span className="flex-1">{item.name}</span>
                     {item.indicator && (
-                      <span className={`h-2 w-2 rounded-full ${isActive ? 'bg-on-primary-container' : 'bg-primary-container'}`}></span>
+                      <span className={`h-2 w-2 rounded-full ${isActive ? 'bg-[#E8B86D]' : 'bg-[#20B8B0]'}`}></span>
                     )}
                   </NavLink>
                 );
@@ -134,22 +144,22 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen = false, onClose }) => 
 
         {/* Tenant Information Footer */}
         <div className="px-space-sm">
-          <div className="p-space-sm rounded-xl bg-surface-container-low flex items-center justify-between gap-space-xs border border-surface-container-high/60">
+          <div className="p-2.5 rounded-xl bg-white/5 border border-white/10 flex items-center justify-between gap-space-xs text-white">
             <div className="flex items-center gap-space-sm min-w-0">
-              <div className="w-8 h-8 rounded-lg bg-surface-container-high flex items-center justify-center text-secondary font-bold font-label-md text-label-md shrink-0">
+              <div className="w-8 h-8 rounded-lg bg-[#006D77]/40 border border-[#20B8B0]/30 flex items-center justify-center text-[#E8B86D] font-bold text-xs shrink-0">
                 <span className="material-symbols-outlined text-[18px]">corporate_fare</span>
               </div>
               <div className="flex flex-col min-w-0">
-                <span className="font-label-md text-label-md text-on-surface truncate font-semibold">
+                <span className="text-xs text-white truncate font-semibold">
                   Acme Travel Corp
                 </span>
-                <span className="font-label-sm text-label-sm text-on-surface-variant truncate">
-                  Global Tier 1
+                <span className="text-[10px] text-white/60 truncate">
+                  Global Tier 1 • GDS Live
                 </span>
               </div>
             </div>
             <button
-              className="text-on-surface-variant hover:text-on-surface p-1 rounded transition-colors"
+              className="text-white/60 hover:text-white p-1 rounded transition-colors"
               type="button"
               title="Switch Organization"
             >

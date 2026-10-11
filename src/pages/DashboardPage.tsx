@@ -75,18 +75,18 @@ export const DashboardPage: React.FC = () => {
       <section className="flex flex-col lg:flex-row lg:items-center justify-between gap-space-md text-left">
         <div className="flex flex-col gap-space-xs">
           <div className="flex items-center gap-space-xs flex-wrap">
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-surface-container-high text-on-surface-variant font-label-sm text-xs">
-              <span className="w-1.5 h-1.5 rounded-full bg-primary-container animate-pulse"></span>
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#20B8B0]/15 text-[#006D77] border border-[#20B8B0]/30 font-label-sm text-xs font-bold">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#20B8B0] animate-pulse"></span>
               AI Risk Engine Active
             </span>
-            <span className="font-code-sm text-xs text-on-surface-variant/70">
+            <span className="font-code-sm text-xs text-gray-500 font-medium">
               Multi-Agent Arbitrator v2.4
             </span>
           </div>
-          <h1 className="font-headline-lg text-2xl sm:text-headline-lg text-on-surface tracking-tight font-bold">
+          <h1 className="font-headline-lg text-2xl sm:text-3xl text-[#0d283e] tracking-tight font-extrabold font-['Plus_Jakarta_Sans']">
             Refund Investigation & Risk Console
           </h1>
-          <p className="font-body-md text-sm sm:text-body-md text-on-surface-variant">
+          <p className="font-body-md text-sm sm:text-body-md text-gray-600">
             Autonomous dispute verification, fraud & statutory risk management, and agent-led payout arbitration.
           </p>
         </div>
@@ -95,12 +95,12 @@ export const DashboardPage: React.FC = () => {
           {/* Timeframe Dropdown */}
           <button
             onClick={handleCycleTimeframe}
-            className="flex items-center gap-space-xs bg-surface-container-lowest text-on-surface font-label-md text-xs sm:text-sm px-space-md py-2.5 rounded-full shadow-sm hover:bg-surface-container-low transition-colors border border-surface-container cursor-pointer"
+            className="flex items-center gap-space-xs bg-white text-[#0d283e] font-label-md text-xs sm:text-sm font-semibold px-space-md py-2.5 rounded-full shadow-xs hover:bg-[#f0f5f7] transition-all border border-[#006D77]/20 cursor-pointer"
             type="button"
           >
-            <span className="material-symbols-outlined text-[18px] text-on-surface-variant">calendar_today</span>
+            <span className="material-symbols-outlined text-[18px] text-[#006D77]">calendar_today</span>
             <span>{timeframe}</span>
-            <span className="material-symbols-outlined text-[16px] text-on-surface-variant">expand_more</span>
+            <span className="material-symbols-outlined text-[16px] text-gray-500">expand_more</span>
           </button>
 
           {/* Export Audit Log Button */}
@@ -108,17 +108,17 @@ export const DashboardPage: React.FC = () => {
             onClick={() => {
               alert('Exporting verified audit trail for active session...');
             }}
-            className="flex items-center gap-space-xs bg-surface-container-lowest text-on-surface font-label-md text-xs sm:text-sm px-space-md py-2.5 rounded-full shadow-sm hover:bg-surface-container-low transition-colors border border-surface-container cursor-pointer"
+            className="flex items-center gap-space-xs bg-white text-[#0d283e] font-label-md text-xs sm:text-sm font-semibold px-space-md py-2.5 rounded-full shadow-xs hover:bg-[#f0f5f7] transition-all border border-[#006D77]/20 cursor-pointer"
             type="button"
           >
-            <span className="material-symbols-outlined text-[18px] text-on-surface-variant">ios_share</span>
+            <span className="material-symbols-outlined text-[18px] text-gray-600">ios_share</span>
             <span>Export Audit Log</span>
           </button>
 
           {/* New Investigation Button */}
           <button
             onClick={() => navigate('/refund-investigations/AT-9842')}
-            className="flex items-center gap-space-xs bg-primary-container text-on-primary-container font-label-md text-xs sm:text-sm font-bold px-space-lg py-2.5 rounded-full shadow-sm hover:shadow-md hover:bg-primary-fixed-dim transition-all cursor-pointer"
+            className="flex items-center gap-space-xs bg-gradient-to-r from-[#006D77] to-[#20B8B0] hover:from-[#005a63] hover:to-[#1aa39b] text-white font-label-md text-xs sm:text-sm font-bold px-space-lg py-2.5 rounded-full shadow-md hover:shadow-lg transition-all cursor-pointer"
             type="button"
           >
             <span className="material-symbols-outlined text-[18px]">add</span>
@@ -611,7 +611,7 @@ export const DashboardPage: React.FC = () => {
 
             <button
               onClick={() => navigate('/refund-investigations')}
-              className="flex items-center gap-1.5 px-space-md py-2 rounded-full bg-primary-container text-on-primary-container font-label-md text-xs sm:text-sm font-semibold hover:shadow transition-all cursor-pointer whitespace-nowrap shadow-xs"
+              className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-gradient-to-r from-[#006D77] to-[#20B8B0] text-white font-label-md text-xs sm:text-sm font-bold hover:shadow-md transition-all cursor-pointer whitespace-nowrap shadow-xs"
               type="button"
             >
               <span>View Full Ledger</span>
@@ -624,10 +624,10 @@ export const DashboardPage: React.FC = () => {
         <div className="flex items-center gap-space-xs overflow-x-auto pb-space-xs">
           <button
             onClick={() => setActiveTab('all')}
-            className={`px-space-md py-1.5 rounded-full font-label-md text-xs font-semibold whitespace-nowrap transition-colors cursor-pointer ${
+            className={`px-4 py-1.5 rounded-full font-label-md text-xs font-bold whitespace-nowrap transition-all cursor-pointer ${
               activeTab === 'all'
-                ? 'bg-inverse-surface text-inverse-on-surface'
-                : 'bg-surface-container-low hover:bg-surface-container text-on-surface-variant'
+                ? 'bg-gradient-to-r from-[#006D77] to-[#20B8B0] text-white shadow-xs'
+                : 'bg-[#f0f5f7] hover:bg-[#e7eff2] text-[#0d283e]'
             }`}
             type="button"
           >
@@ -635,10 +635,10 @@ export const DashboardPage: React.FC = () => {
           </button>
           <button
             onClick={() => setActiveTab('approved')}
-            className={`px-space-md py-1.5 rounded-full font-label-md text-xs font-semibold whitespace-nowrap transition-colors cursor-pointer ${
+            className={`px-4 py-1.5 rounded-full font-label-md text-xs font-bold whitespace-nowrap transition-all cursor-pointer ${
               activeTab === 'approved'
-                ? 'bg-inverse-surface text-inverse-on-surface'
-                : 'bg-surface-container-low hover:bg-surface-container text-on-surface-variant'
+                ? 'bg-gradient-to-r from-[#006D77] to-[#20B8B0] text-white shadow-xs'
+                : 'bg-[#f0f5f7] hover:bg-[#e7eff2] text-[#0d283e]'
             }`}
             type="button"
           >
@@ -646,10 +646,10 @@ export const DashboardPage: React.FC = () => {
           </button>
           <button
             onClick={() => setActiveTab('review')}
-            className={`px-space-md py-1.5 rounded-full font-label-md text-xs font-semibold whitespace-nowrap transition-colors cursor-pointer ${
+            className={`px-4 py-1.5 rounded-full font-label-md text-xs font-bold whitespace-nowrap transition-all cursor-pointer ${
               activeTab === 'review'
-                ? 'bg-inverse-surface text-inverse-on-surface'
-                : 'bg-surface-container-low hover:bg-surface-container text-on-surface-variant'
+                ? 'bg-gradient-to-r from-[#006D77] to-[#20B8B0] text-white shadow-xs'
+                : 'bg-[#f0f5f7] hover:bg-[#e7eff2] text-[#0d283e]'
             }`}
             type="button"
           >
@@ -657,10 +657,10 @@ export const DashboardPage: React.FC = () => {
           </button>
           <button
             onClick={() => setActiveTab('awaiting')}
-            className={`px-space-md py-1.5 rounded-full font-label-md text-xs font-semibold whitespace-nowrap transition-colors cursor-pointer ${
+            className={`px-4 py-1.5 rounded-full font-label-md text-xs font-bold whitespace-nowrap transition-all cursor-pointer ${
               activeTab === 'awaiting'
-                ? 'bg-inverse-surface text-inverse-on-surface'
-                : 'bg-surface-container-low hover:bg-surface-container text-on-surface-variant'
+                ? 'bg-gradient-to-r from-[#006D77] to-[#20B8B0] text-white shadow-xs'
+                : 'bg-[#f0f5f7] hover:bg-[#e7eff2] text-[#0d283e]'
             }`}
             type="button"
           >
@@ -668,10 +668,10 @@ export const DashboardPage: React.FC = () => {
           </button>
           <button
             onClick={() => setActiveTab('flagged')}
-            className={`px-space-md py-1.5 rounded-full font-label-md text-xs font-semibold whitespace-nowrap transition-colors cursor-pointer ${
+            className={`px-4 py-1.5 rounded-full font-label-md text-xs font-bold whitespace-nowrap transition-all cursor-pointer ${
               activeTab === 'flagged'
-                ? 'bg-inverse-surface text-inverse-on-surface'
-                : 'bg-surface-container-low hover:bg-surface-container text-on-surface-variant'
+                ? 'bg-gradient-to-r from-[#006D77] to-[#20B8B0] text-white shadow-xs'
+                : 'bg-[#f0f5f7] hover:bg-[#e7eff2] text-[#0d283e]'
             }`}
             type="button"
           >

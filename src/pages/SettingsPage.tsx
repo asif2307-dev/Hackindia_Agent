@@ -49,40 +49,40 @@ export const SettingsPage: React.FC = () => {
     <div className="flex flex-col w-full pb-20 text-left">
       {/* Save Success Alert */}
       {saveSuccess && (
-        <div className="fixed top-20 right-6 z-50 p-4 rounded-2xl bg-primary-container text-on-primary-container font-semibold shadow-2xl flex items-center gap-3 animate-fade-in border border-primary">
-          <span className="material-symbols-outlined text-[22px]">task_alt</span>
+        <div className="fixed top-20 right-6 z-50 p-4 rounded-2xl bg-gradient-to-r from-[#0d283e] via-[#006D77] to-[#0a1e2e] text-white font-bold shadow-2xl flex items-center gap-3 animate-fade-in border border-[#20B8B0]/40">
+          <span className="material-symbols-outlined text-[22px] text-[#E8B86D]">task_alt</span>
           <span>Platform settings updated and logged to audit ledger!</span>
         </div>
       )}
 
       {/* Header & Breadcrumbs Area */}
-      <div className="relative flex flex-col gap-1 pb-space-lg mb-2">
-        <div className="flex items-center gap-2 font-label-sm text-[11px] text-outline tracking-wider uppercase">
+      <div className="relative flex flex-col gap-1 pb-4 mb-2">
+        <div className="flex items-center gap-2 text-xs text-slate-500 font-semibold tracking-wider uppercase">
           <span>System</span>
-          <span className="material-symbols-outlined text-[14px]">chevron_right</span>
-          <span className="text-on-surface font-semibold">Platform Settings</span>
+          <span className="material-symbols-outlined text-[14px] text-slate-400">chevron_right</span>
+          <span className="text-[#006D77] font-bold">Platform Settings</span>
         </div>
         <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mt-1">
           <div>
-            <h1 className="font-headline-lg text-2xl sm:text-headline-lg text-on-surface tracking-tight font-bold">
+            <h1 className="text-2xl sm:text-3xl text-[#17324D] tracking-tight font-extrabold font-['Plus_Jakarta_Sans']">
               Settings
             </h1>
-            <p className="font-body-md text-xs sm:text-sm text-on-surface-variant mt-1 max-w-3xl">
+            <p className="text-xs sm:text-sm text-slate-600 mt-1 max-w-3xl">
               Configure refund investigation policies, risk thresholds, human review rules, and platform preferences.
             </p>
           </div>
-          <div className="flex items-center gap-2 bg-surface-container-low px-3 py-1.5 rounded-full shrink-0 border border-surface-container">
-            <span className="w-2 h-2 rounded-full bg-primary-container animate-pulse"></span>
-            <span className="font-label-sm text-xs text-on-surface-variant">Refund Policies: Active</span>
+          <div className="flex items-center gap-2 bg-[#EAF8F7] px-3.5 py-1.5 rounded-full shrink-0 border border-[#20B8B0]/30 shadow-2xs">
+            <span className="w-2 h-2 rounded-full bg-[#20B8B0] animate-pulse"></span>
+            <span className="text-xs text-[#006D77] font-bold">Refund Policies: Active</span>
           </div>
         </div>
       </div>
 
       {/* Main Asymmetric Settings Cockpit */}
-      <div className="relative grid grid-cols-1 lg:grid-cols-12 gap-space-xl items-start">
+      <div className="relative grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         {/* Sub-navigation Rail (Sticky Column) */}
-        <nav className="lg:col-span-3 sticky top-20 flex flex-col gap-1 bg-surface-container-lowest p-space-md rounded-2xl shadow-sm border border-surface-container">
-          <p className="font-label-sm text-[11px] uppercase tracking-wider text-outline px-space-sm pb-space-xs font-semibold">
+        <nav className="lg:col-span-3 sticky top-20 flex flex-col gap-1.5 bg-white p-3.5 rounded-2xl shadow-sm border border-[#C2EAE7]/70">
+          <p className="text-[11px] uppercase tracking-wider text-slate-400 px-3 pb-1 font-bold">
             Preferences
           </p>
           {navItems.map((item) => {
@@ -96,18 +96,18 @@ export const SettingsPage: React.FC = () => {
                   setActiveSection(item.id);
                   document.getElementById(item.id)?.scrollIntoView({ behavior: 'smooth' });
                 }}
-                className={`flex items-center justify-between px-space-md py-2.5 rounded-xl font-label-md text-xs sm:text-sm transition-all ${
+                className={`flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition-all cursor-pointer ${
                   isActive
-                    ? 'bg-primary-container text-on-primary-container font-semibold shadow-xs'
-                    : 'text-on-surface-variant hover:bg-surface-container hover:text-on-surface'
+                    ? 'bg-gradient-to-r from-[#006D77] to-[#20B8B0] text-white font-bold shadow-xs'
+                    : 'text-slate-600 hover:bg-[#EAF8F7] hover:text-[#006D77]'
                 }`}
               >
                 <div className="flex items-center gap-2.5">
-                  <span className="material-symbols-outlined text-[18px]">{item.icon}</span>
+                  <span className={`material-symbols-outlined text-[18px] ${isActive ? 'text-white' : 'text-[#006D77]'}`}>{item.icon}</span>
                   <span>{item.label}</span>
                 </div>
-                {item.tag && <span className="font-code-sm text-[11px] text-outline">{item.tag}</span>}
-                {item.dot && <span className="w-1.5 h-1.5 rounded-full bg-secondary"></span>}
+                {item.tag && <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${isActive ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-500'}`}>{item.tag}</span>}
+                {item.dot && <span className={`w-1.5 h-1.5 rounded-full ${isActive ? 'bg-[#E8B86D]' : 'bg-[#006D77]'}`}></span>}
                 {isActive && !item.tag && !item.dot && (
                   <span className="material-symbols-outlined text-[16px]">chevron_right</span>
                 )}
@@ -117,27 +117,27 @@ export const SettingsPage: React.FC = () => {
         </nav>
 
         {/* Detailed Content Columns */}
-        <div className="lg:col-span-9 flex flex-col gap-space-xl">
+        <div className="lg:col-span-9 flex flex-col gap-6">
           {/* SECTION 1: General Settings */}
           <section
             id="general"
-            className="p-space-lg sm:p-space-xl rounded-2xl bg-surface-container-lowest shadow-sm border border-surface-container flex flex-col gap-space-lg"
+            className="p-5 sm:p-6 rounded-2xl bg-white shadow-sm border border-[#C2EAE7]/70 flex flex-col gap-5"
           >
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-space-sm border-b border-surface-container">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-slate-100">
               <div>
                 <div className="flex items-center gap-2">
-                  <span className="material-symbols-outlined text-primary text-[22px]">tune</span>
-                  <h2 className="font-headline-md text-lg sm:text-headline-md font-bold text-on-surface tracking-tight">
+                  <span className="material-symbols-outlined text-[#006D77] text-[22px]">tune</span>
+                  <h2 className="text-base sm:text-lg font-bold text-[#17324D] tracking-tight">
                     General Settings
                   </h2>
                 </div>
-                <p className="font-body-sm text-xs text-on-surface-variant mt-1">
+                <p className="text-xs text-slate-500 mt-0.5">
                   Manage platform localization, reporting formats, and regional operating parameters.
                 </p>
               </div>
               <button
                 onClick={handleSave}
-                className="self-start sm:self-auto px-space-md py-2 rounded-full bg-primary-container text-on-primary-container font-label-md text-xs font-semibold hover:shadow-md transition-all flex items-center gap-1.5 cursor-pointer"
+                className="self-start sm:self-auto px-4 py-2 rounded-full bg-gradient-to-r from-[#006D77] to-[#20B8B0] hover:from-[#005a63] hover:to-[#1aa39b] text-white text-xs font-bold shadow-xs hover:shadow-md transition-all flex items-center gap-1.5 cursor-pointer"
                 type="button"
               >
                 <span className="material-symbols-outlined text-[16px]">save</span>
@@ -145,15 +145,15 @@ export const SettingsPage: React.FC = () => {
               </button>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-space-md">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* Field: Org Name */}
               <div className="flex flex-col gap-1.5">
-                <label className="font-label-md text-xs font-medium text-on-surface flex items-center justify-between" htmlFor="org-name">
+                <label className="text-xs font-bold text-[#17324D] flex items-center justify-between" htmlFor="org-name">
                   <span>Organization Name</span>
-                  <span className="font-label-sm text-[11px] text-outline">Verified Tenant</span>
+                  <span className="text-[11px] text-[#006D77] font-semibold bg-[#EAF8F7] px-2 py-0.5 rounded">Verified Tenant</span>
                 </label>
                 <div className="relative">
-                  <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline text-[18px]">
+                  <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-[18px]">
                     apartment
                   </span>
                   <input
@@ -161,25 +161,25 @@ export const SettingsPage: React.FC = () => {
                     type="text"
                     value={orgName}
                     onChange={(e) => setOrgName(e.target.value)}
-                    className="w-full h-11 pl-10 pr-4 rounded-xl bg-surface-container-low font-body-md text-xs sm:text-sm text-on-surface focus:bg-surface-container-lowest focus:shadow-xs focus:outline-none border border-surface-container transition-all"
+                    className="w-full h-11 pl-10 pr-4 rounded-xl bg-[#f8fbfa] text-xs sm:text-sm text-[#17324D] font-medium focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#20B8B0]/30 focus:border-[#006D77] border border-slate-200 transition-all"
                   />
                 </div>
               </div>
 
               {/* Field: Default Currency */}
               <div className="flex flex-col gap-1.5">
-                <label className="font-label-md text-xs font-medium text-on-surface" htmlFor="currency-select">
+                <label className="text-xs font-bold text-[#17324D]" htmlFor="currency-select">
                   Default Currency
                 </label>
                 <div className="relative">
-                  <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline text-[18px]">
+                  <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-[18px]">
                     currency_rupee
                   </span>
                   <select
                     id="currency-select"
                     value={currency}
                     onChange={(e) => setCurrency(e.target.value)}
-                    className="w-full h-11 pl-10 pr-9 rounded-xl bg-surface-container-low font-body-md text-xs sm:text-sm text-on-surface focus:bg-surface-container-lowest focus:shadow-xs focus:outline-none appearance-none border border-surface-container transition-all cursor-pointer"
+                    className="w-full h-11 pl-10 pr-9 rounded-xl bg-[#f8fbfa] text-xs sm:text-sm text-[#17324D] font-medium focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#20B8B0]/30 focus:border-[#006D77] appearance-none border border-slate-200 transition-all cursor-pointer"
                   >
                     <option>INR (₹) - Indian Rupee</option>
                     <option>USD ($) - US Dollar</option>
@@ -187,7 +187,7 @@ export const SettingsPage: React.FC = () => {
                     <option>GBP (£) - British Pound</option>
                     <option>SGD (S$) - Singapore Dollar</option>
                   </select>
-                  <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-outline text-[18px] pointer-events-none">
+                  <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 text-[18px] pointer-events-none">
                     expand_more
                   </span>
                 </div>
@@ -195,18 +195,18 @@ export const SettingsPage: React.FC = () => {
 
               {/* Field: Investigation Timezone */}
               <div className="flex flex-col gap-1.5">
-                <label className="font-label-md text-xs font-medium text-on-surface" htmlFor="timezone-select">
+                <label className="text-xs font-bold text-[#17324D]" htmlFor="timezone-select">
                   Investigation Timezone
                 </label>
                 <div className="relative">
-                  <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline text-[18px]">
+                  <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-[18px]">
                     schedule
                   </span>
                   <select
                     id="timezone-select"
                     value={timezone}
                     onChange={(e) => setTimezone(e.target.value)}
-                    className="w-full h-11 pl-10 pr-9 rounded-xl bg-surface-container-low font-body-md text-xs sm:text-sm text-on-surface focus:bg-surface-container-lowest focus:shadow-xs focus:outline-none appearance-none border border-surface-container transition-all cursor-pointer"
+                    className="w-full h-11 pl-10 pr-9 rounded-xl bg-[#f8fbfa] text-xs sm:text-sm text-[#17324D] font-medium focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#20B8B0]/30 focus:border-[#006D77] appearance-none border border-slate-200 transition-all cursor-pointer"
                   >
                     <option>Asia/Kolkata (IST, UTC+05:30)</option>
                     <option>UTC (Coordinated Universal Time)</option>
@@ -214,7 +214,7 @@ export const SettingsPage: React.FC = () => {
                     <option>America/New_York (EST, UTC-05:00)</option>
                     <option>Asia/Singapore (SGT, UTC+08:00)</option>
                   </select>
-                  <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-outline text-[18px] pointer-events-none">
+                  <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 text-[18px] pointer-events-none">
                     expand_more
                   </span>
                 </div>
@@ -222,25 +222,25 @@ export const SettingsPage: React.FC = () => {
 
               {/* Field: Date Format */}
               <div className="flex flex-col gap-1.5">
-                <label className="font-label-md text-xs font-medium text-on-surface" htmlFor="date-format-select">
+                <label className="text-xs font-bold text-[#17324D]" htmlFor="date-format-select">
                   Date Format
                 </label>
                 <div className="relative">
-                  <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline text-[18px]">
+                  <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-[18px]">
                     calendar_today
                   </span>
                   <select
                     id="date-format-select"
                     value={dateFormat}
                     onChange={(e) => setDateFormat(e.target.value)}
-                    className="w-full h-11 pl-10 pr-9 rounded-xl bg-surface-container-low font-body-md text-xs sm:text-sm text-on-surface focus:bg-surface-container-lowest focus:shadow-xs focus:outline-none appearance-none border border-surface-container transition-all cursor-pointer"
+                    className="w-full h-11 pl-10 pr-9 rounded-xl bg-[#f8fbfa] text-xs sm:text-sm text-[#17324D] font-medium focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#20B8B0]/30 focus:border-[#006D77] appearance-none border border-slate-200 transition-all cursor-pointer"
                   >
                     <option>DD MMM YYYY (e.g., 24 Oct 2026)</option>
                     <option>YYYY-MM-DD (ISO 8601)</option>
                     <option>MM/DD/YYYY</option>
                     <option>DD/MM/YYYY</option>
                   </select>
-                  <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-outline text-[18px] pointer-events-none">
+                  <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 text-[18px] pointer-events-none">
                     expand_more
                   </span>
                 </div>
@@ -251,33 +251,33 @@ export const SettingsPage: React.FC = () => {
           {/* SECTION 2: Refund Investigation Policies */}
           <section
             id="refund-policies"
-            className="p-space-lg sm:p-space-xl rounded-2xl bg-surface-container-lowest shadow-sm border border-surface-container flex flex-col gap-space-lg"
+            className="p-5 sm:p-6 rounded-2xl bg-white shadow-sm border border-[#C2EAE7]/70 flex flex-col gap-5"
           >
-            <div className="flex flex-col gap-1 pb-space-sm border-b border-surface-container">
+            <div className="flex flex-col gap-1 pb-3 border-b border-slate-100">
               <div className="flex items-center gap-2">
-                <span className="material-symbols-outlined text-primary text-[22px]">balance</span>
-                <h2 className="font-headline-md text-lg sm:text-headline-md font-bold text-on-surface tracking-tight">
+                <span className="material-symbols-outlined text-[#006D77] text-[22px]">balance</span>
+                <h2 className="text-base sm:text-lg font-bold text-[#17324D] tracking-tight">
                   Refund Policies
                 </h2>
               </div>
-              <p className="font-body-sm text-xs text-on-surface-variant">
+              <p className="text-xs text-slate-500">
                 Configure refund investigation policies and evidence checks.
               </p>
             </div>
 
             {/* Policy Items Stack */}
-            <div className="flex flex-col gap-space-sm">
+            <div className="flex flex-col gap-3">
               {/* Item 1 */}
-              <div className="p-space-md rounded-xl bg-surface-container-low border border-surface-container flex items-start justify-between gap-4 transition-colors hover:bg-surface-container">
+              <div className="p-4 rounded-xl bg-[#f8fbfa] border border-[#C2EAE7]/70 flex items-start justify-between gap-4 transition-colors hover:border-[#20B8B0] hover:bg-white shadow-2xs">
                 <div className="flex items-start gap-3">
-                  <div className="w-9 h-9 rounded-lg bg-surface-container-lowest flex items-center justify-center text-primary shrink-0 shadow-xs">
+                  <div className="w-10 h-10 rounded-xl bg-white border border-slate-200 flex items-center justify-center text-[#006D77] shrink-0 shadow-xs">
                     <span className="material-symbols-outlined text-[20px]">currency_exchange</span>
                   </div>
                   <div className="flex flex-col">
-                    <span className="font-label-md text-xs sm:text-sm font-semibold text-on-surface">
+                    <span className="text-xs sm:text-sm font-bold text-[#17324D]">
                       Full Refund Recommendation
                     </span>
-                    <p className="font-body-sm text-xs text-on-surface-variant mt-0.5">
+                    <p className="text-xs text-slate-500 mt-0.5">
                       Allows AI to recommend a full refund when the applicable policy supports it.
                     </p>
                   </div>
@@ -289,21 +289,21 @@ export const SettingsPage: React.FC = () => {
                     onChange={(e) => setPolicies({ ...policies, fullRefund: e.target.checked })}
                     className="sr-only peer"
                   />
-                  <div className="w-11 h-6 bg-surface-container-highest peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-surface-container-lowest after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-surface-container-lowest after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-container"></div>
+                  <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-gradient-to-r peer-checked:from-[#006D77] peer-checked:to-[#20B8B0] shadow-inner"></div>
                 </label>
               </div>
 
               {/* Item 2 */}
-              <div className="p-space-md rounded-xl bg-surface-container-low border border-surface-container flex items-start justify-between gap-4 transition-colors hover:bg-surface-container">
+              <div className="p-4 rounded-xl bg-[#f8fbfa] border border-[#C2EAE7]/70 flex items-start justify-between gap-4 transition-colors hover:border-[#20B8B0] hover:bg-white shadow-2xs">
                 <div className="flex items-start gap-3">
-                  <div className="w-9 h-9 rounded-lg bg-surface-container-lowest flex items-center justify-center text-secondary shrink-0 shadow-xs">
+                  <div className="w-10 h-10 rounded-xl bg-white border border-slate-200 flex items-center justify-center text-[#006D77] shrink-0 shadow-xs">
                     <span className="material-symbols-outlined text-[20px]">pie_chart</span>
                   </div>
                   <div className="flex flex-col">
-                    <span className="font-label-md text-xs sm:text-sm font-semibold text-on-surface">
+                    <span className="text-xs sm:text-sm font-bold text-[#17324D]">
                       Partial Refund Recommendation
                     </span>
-                    <p className="font-body-sm text-xs text-on-surface-variant mt-0.5">
+                    <p className="text-xs text-slate-500 mt-0.5">
                       Evaluates sector disruptions, non-refundable taxes, and pro-rated fare segments.
                     </p>
                   </div>
@@ -315,21 +315,21 @@ export const SettingsPage: React.FC = () => {
                     onChange={(e) => setPolicies({ ...policies, partialRefund: e.target.checked })}
                     className="sr-only peer"
                   />
-                  <div className="w-11 h-6 bg-surface-container-highest peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-surface-container-lowest after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-surface-container-lowest after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-container"></div>
+                  <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-gradient-to-r peer-checked:from-[#006D77] peer-checked:to-[#20B8B0] shadow-inner"></div>
                 </label>
               </div>
 
               {/* Item 3 */}
-              <div className="p-space-md rounded-xl bg-surface-container-low border border-surface-container flex items-start justify-between gap-4 transition-colors hover:bg-surface-container">
+              <div className="p-4 rounded-xl bg-[#f8fbfa] border border-[#C2EAE7]/70 flex items-start justify-between gap-4 transition-colors hover:border-[#20B8B0] hover:bg-white shadow-2xs">
                 <div className="flex items-start gap-3">
-                  <div className="w-9 h-9 rounded-lg bg-surface-container-lowest flex items-center justify-center text-on-surface shrink-0 shadow-xs">
+                  <div className="w-10 h-10 rounded-xl bg-white border border-slate-200 flex items-center justify-center text-[#006D77] shrink-0 shadow-xs">
                     <span className="material-symbols-outlined text-[20px]">rule_folder</span>
                   </div>
                   <div className="flex flex-col">
-                    <span className="font-label-md text-xs sm:text-sm font-semibold text-on-surface">
+                    <span className="text-xs sm:text-sm font-bold text-[#17324D]">
                       Policy Evidence Required
                     </span>
-                    <p className="font-body-sm text-xs text-on-surface-variant mt-0.5">
+                    <p className="text-xs text-slate-500 mt-0.5">
                       Checks the applicable refund policy before making a recommendation.
                     </p>
                   </div>
@@ -341,21 +341,21 @@ export const SettingsPage: React.FC = () => {
                     onChange={(e) => setPolicies({ ...policies, policyEvidenceRequired: e.target.checked })}
                     className="sr-only peer"
                   />
-                  <div className="w-11 h-6 bg-surface-container-highest peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-surface-container-lowest after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-surface-container-lowest after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-container"></div>
+                  <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-gradient-to-r peer-checked:from-[#006D77] peer-checked:to-[#20B8B0] shadow-inner"></div>
                 </label>
               </div>
 
               {/* Item 4 */}
-              <div className="p-space-md rounded-xl bg-surface-container-low border border-surface-container flex items-start justify-between gap-4 transition-colors hover:bg-surface-container">
+              <div className="p-4 rounded-xl bg-[#f8fbfa] border border-[#C2EAE7]/70 flex items-start justify-between gap-4 transition-colors hover:border-[#20B8B0] hover:bg-white shadow-2xs">
                 <div className="flex items-start gap-3">
-                  <div className="w-9 h-9 rounded-lg bg-surface-container-lowest flex items-center justify-center text-outline shrink-0 shadow-xs">
+                  <div className="w-10 h-10 rounded-xl bg-white border border-slate-200 flex items-center justify-center text-[#006D77] shrink-0 shadow-xs">
                     <span className="material-symbols-outlined text-[20px]">manage_history</span>
                   </div>
                   <div className="flex flex-col">
-                    <span className="font-label-md text-xs sm:text-sm font-semibold text-on-surface">
+                    <span className="text-xs sm:text-sm font-bold text-[#17324D]">
                       Customer History Check
                     </span>
-                    <p className="font-body-sm text-xs text-on-surface-variant mt-0.5">
+                    <p className="text-xs text-slate-500 mt-0.5">
                       Checks customer history for relevant refund and dispute patterns.
                     </p>
                   </div>
@@ -367,21 +367,21 @@ export const SettingsPage: React.FC = () => {
                     onChange={(e) => setPolicies({ ...policies, customerHistoryCheck: e.target.checked })}
                     className="sr-only peer"
                   />
-                  <div className="w-11 h-6 bg-surface-container-highest peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-surface-container-lowest after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-surface-container-lowest after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-container"></div>
+                  <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-gradient-to-r peer-checked:from-[#006D77] peer-checked:to-[#20B8B0] shadow-inner"></div>
                 </label>
               </div>
 
               {/* Item 5 */}
-              <div className="p-space-md rounded-xl bg-surface-container-low border border-surface-container flex items-start justify-between gap-4 transition-colors hover:bg-surface-container">
+              <div className="p-4 rounded-xl bg-[#f8fbfa] border border-[#C2EAE7]/70 flex items-start justify-between gap-4 transition-colors hover:border-[#20B8B0] hover:bg-white shadow-2xs">
                 <div className="flex items-start gap-3">
-                  <div className="w-9 h-9 rounded-lg bg-surface-container-lowest flex items-center justify-center text-primary-container shrink-0 shadow-xs">
+                  <div className="w-10 h-10 rounded-xl bg-white border border-slate-200 flex items-center justify-center text-[#006D77] shrink-0 shadow-xs">
                     <span className="material-symbols-outlined text-[20px]">flight_takeoff</span>
                   </div>
                   <div className="flex flex-col">
-                    <span className="font-label-md text-xs sm:text-sm font-semibold text-on-surface">
+                    <span className="text-xs sm:text-sm font-bold text-[#17324D]">
                       Cancellation Evidence Check
                     </span>
-                    <p className="font-body-sm text-xs text-on-surface-variant mt-0.5">
+                    <p className="text-xs text-slate-500 mt-0.5">
                       Checks booking and cancellation evidence.
                     </p>
                   </div>
@@ -393,17 +393,17 @@ export const SettingsPage: React.FC = () => {
                     onChange={(e) => setPolicies({ ...policies, cancellationEvidenceCheck: e.target.checked })}
                     className="sr-only peer"
                   />
-                  <div className="w-11 h-6 bg-surface-container-highest peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-surface-container-lowest after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-surface-container-lowest after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-container"></div>
+                  <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-gradient-to-r peer-checked:from-[#006D77] peer-checked:to-[#20B8B0] shadow-inner"></div>
                 </label>
               </div>
             </div>
 
             {/* Banner */}
-            <div className="p-space-md rounded-xl bg-surface-container-low border border-surface-container flex items-center gap-space-md">
-              <div className="w-8 h-8 rounded-full bg-secondary-fixed flex items-center justify-center text-secondary shrink-0">
+            <div className="p-4 rounded-xl bg-[#EAF8F7] border border-[#20B8B0]/30 flex items-center gap-3">
+              <div className="w-8 h-8 rounded-full bg-[#006D77]/10 flex items-center justify-center text-[#006D77] shrink-0">
                 <span className="material-symbols-outlined text-[18px]">info</span>
               </div>
-              <p className="font-body-sm text-xs text-on-surface">
+              <p className="text-xs text-slate-700 leading-relaxed">
                 AI uses these policies as investigation inputs. Final refund decisions remain subject to human approval when required.
               </p>
             </div>
@@ -412,42 +412,42 @@ export const SettingsPage: React.FC = () => {
           {/* SECTION 3: Risk & Human Review Rules */}
           <section
             id="risk-rules"
-            className="p-space-lg sm:p-space-xl rounded-2xl bg-surface-container-lowest shadow-sm border border-surface-container flex flex-col gap-space-lg"
+            className="p-5 sm:p-6 rounded-2xl bg-white shadow-sm border border-[#C2EAE7]/70 flex flex-col gap-5"
           >
-            <div className="flex flex-col gap-1 pb-space-sm border-b border-surface-container">
+            <div className="flex flex-col gap-1 pb-3 border-b border-slate-100">
               <div className="flex items-center gap-2">
-                <span className="material-symbols-outlined text-secondary text-[22px]">security</span>
-                <h2 className="font-headline-md text-lg sm:text-headline-md font-bold text-on-surface tracking-tight">
+                <span className="material-symbols-outlined text-[#006D77] text-[22px]">security</span>
+                <h2 className="text-base sm:text-lg font-bold text-[#17324D] tracking-tight">
                   Risk & Human Review Rules
                 </h2>
               </div>
-              <p className="font-body-sm text-xs text-on-surface-variant">
+              <p className="text-xs text-slate-500">
                 Automated thresholds and guardrails triggering required human auditor intervention.
               </p>
             </div>
 
-            <div className="flex flex-col gap-space-md">
+            <div className="flex flex-col gap-4">
               {/* Threshold Slider Card */}
-              <div className="p-space-md rounded-xl bg-surface-container-low border border-surface-container flex flex-col gap-3">
+              <div className="p-4 rounded-xl bg-[#f8fbfa] border border-[#C2EAE7]/70 flex flex-col gap-3 shadow-2xs">
                 <div className="flex items-center justify-between">
                   <div>
-                    <span className="font-label-md text-xs sm:text-sm font-semibold text-on-surface">
+                    <span className="text-xs sm:text-sm font-bold text-[#17324D]">
                       High Risk Threshold
                     </span>
-                    <p className="font-body-sm text-xs text-on-surface-variant">
+                    <p className="text-xs text-slate-500">
                       Scale 0–100 anomaly benchmark score. Investigations exceeding this trigger immediate triage locks.
                     </p>
                   </div>
-                  <div className="flex items-center gap-1.5 px-3 py-1 rounded-xl bg-surface-container-lowest shadow-xs border border-surface-container">
-                    <span className="font-headline-sm text-base font-bold text-secondary">
+                  <div className="flex items-center gap-1.5 px-3 py-1 rounded-xl bg-white shadow-xs border border-slate-200">
+                    <span className="text-base font-extrabold text-[#006D77]">
                       {riskRules.highRiskThreshold}
                     </span>
-                    <span className="font-label-sm text-[11px] text-outline">/ 100</span>
+                    <span className="text-[11px] text-slate-400 font-semibold">/ 100</span>
                   </div>
                 </div>
 
                 <div className="flex items-center gap-4">
-                  <span className="font-code-sm text-xs text-outline">0</span>
+                  <span className="text-xs text-slate-400 font-mono font-bold">0</span>
                   <input
                     type="range"
                     min="0"
@@ -456,19 +456,19 @@ export const SettingsPage: React.FC = () => {
                     onChange={(e) =>
                       setRiskRules({ ...riskRules, highRiskThreshold: parseInt(e.target.value, 10) })
                     }
-                    className="w-full h-2 bg-surface-container-high rounded-lg appearance-none cursor-pointer accent-secondary"
+                    className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-[#006D77]"
                   />
-                  <span className="font-code-sm text-xs text-outline">100</span>
+                  <span className="text-xs text-slate-400 font-mono font-bold">100</span>
                 </div>
               </div>
 
               {/* Human Review Required Toggle */}
-              <div className="p-space-md rounded-xl bg-surface-container-low border border-surface-container flex items-center justify-between gap-4">
+              <div className="p-4 rounded-xl bg-[#f8fbfa] border border-[#C2EAE7]/70 flex items-center justify-between gap-4 shadow-2xs">
                 <div className="flex flex-col">
-                  <span className="font-label-md text-xs sm:text-sm font-semibold text-on-surface">
+                  <span className="text-xs sm:text-sm font-bold text-[#17324D]">
                     Human Review Required
                   </span>
-                  <p className="font-body-sm text-xs text-on-surface-variant mt-0.5">
+                  <p className="text-xs text-slate-500 mt-0.5">
                     Directs cases exceeding risk thresholds into auditor triage queue.
                   </p>
                 </div>
@@ -479,22 +479,22 @@ export const SettingsPage: React.FC = () => {
                     onChange={(e) => setRiskRules({ ...riskRules, humanReviewRequired: e.target.checked })}
                     className="sr-only peer"
                   />
-                  <div className="w-11 h-6 bg-surface-container-highest peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-surface-container-lowest after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-surface-container-lowest after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-container"></div>
+                  <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-gradient-to-r peer-checked:from-[#006D77] peer-checked:to-[#20B8B0] shadow-inner"></div>
                 </label>
               </div>
 
               {/* High-Value Refund Review */}
-              <div className="p-space-md rounded-xl bg-surface-container-low border border-surface-container flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="p-4 rounded-xl bg-[#f8fbfa] border border-[#C2EAE7]/70 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-2xs">
                 <div className="flex flex-col max-w-lg">
-                  <span className="font-label-md text-xs sm:text-sm font-semibold text-on-surface">
+                  <span className="text-xs sm:text-sm font-bold text-[#17324D]">
                     High-Value Refund Review
                   </span>
-                  <p className="font-body-sm text-xs text-on-surface-variant mt-0.5">
+                  <p className="text-xs text-slate-500 mt-0.5">
                     Any refund recommendation at or exceeding this threshold requires manual sign-off.
                   </p>
                 </div>
                 <div className="relative w-full sm:w-44 shrink-0">
-                  <span className="font-body-md text-xs sm:text-sm text-outline absolute left-3 top-1/2 -translate-y-1/2 font-semibold">
+                  <span className="text-xs sm:text-sm text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 font-bold">
                     ₹
                   </span>
                   <input
@@ -504,18 +504,18 @@ export const SettingsPage: React.FC = () => {
                       const num = parseInt(e.target.value.replace(/,/g, ''), 10) || 0;
                       setRiskRules({ ...riskRules, highValueThreshold: num });
                     }}
-                    className="w-full h-10 pl-7 pr-3 rounded-xl bg-surface-container-lowest font-headline-sm text-xs sm:text-sm font-semibold text-on-surface focus:outline-none shadow-xs border border-surface-container text-right"
+                    className="w-full h-10 pl-7 pr-3 rounded-xl bg-white text-xs sm:text-sm font-bold text-[#17324D] focus:outline-none focus:ring-2 focus:ring-[#20B8B0]/30 focus:border-[#006D77] shadow-xs border border-slate-200 text-right"
                   />
                 </div>
               </div>
 
               {/* Insufficient Evidence Review */}
-              <div className="p-space-md rounded-xl bg-surface-container-low border border-surface-container flex items-center justify-between gap-4">
+              <div className="p-4 rounded-xl bg-[#f8fbfa] border border-[#C2EAE7]/70 flex items-center justify-between gap-4 shadow-2xs">
                 <div className="flex flex-col">
-                  <span className="font-label-md text-xs sm:text-sm font-semibold text-on-surface">
+                  <span className="text-xs sm:text-sm font-bold text-[#17324D]">
                     Insufficient Evidence Review
                   </span>
-                  <p className="font-body-sm text-xs text-on-surface-variant mt-0.5">
+                  <p className="text-xs text-slate-500 mt-0.5">
                     Automatically escalates investigations missing carrier or payment verification data.
                   </p>
                 </div>
@@ -526,17 +526,17 @@ export const SettingsPage: React.FC = () => {
                     onChange={(e) => setRiskRules({ ...riskRules, insufficientEvidenceReview: e.target.checked })}
                     className="sr-only peer"
                   />
-                  <div className="w-11 h-6 bg-surface-container-highest peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-surface-container-lowest after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-surface-container-lowest after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-container"></div>
+                  <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-gradient-to-r peer-checked:from-[#006D77] peer-checked:to-[#20B8B0] shadow-inner"></div>
                 </label>
               </div>
 
               {/* Account or Payment Risk Review */}
-              <div className="p-space-md rounded-xl bg-surface-container-low border border-surface-container flex items-center justify-between gap-4">
+              <div className="p-4 rounded-xl bg-[#f8fbfa] border border-[#C2EAE7]/70 flex items-center justify-between gap-4 shadow-2xs">
                 <div className="flex flex-col">
-                  <span className="font-label-md text-xs sm:text-sm font-semibold text-on-surface">
+                  <span className="text-xs sm:text-sm font-bold text-[#17324D]">
                     Account or Payment Risk Review
                   </span>
-                  <p className="font-body-sm text-xs text-on-surface-variant mt-0.5">
+                  <p className="text-xs text-slate-500 mt-0.5">
                     Flags mismatched settlement accounts or third-party corporate cards.
                   </p>
                 </div>
@@ -547,14 +547,14 @@ export const SettingsPage: React.FC = () => {
                     onChange={(e) => setRiskRules({ ...riskRules, paymentRiskReview: e.target.checked })}
                     className="sr-only peer"
                   />
-                  <div className="w-11 h-6 bg-surface-container-highest peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-surface-container-lowest after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-surface-container-lowest after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-container"></div>
+                  <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-gradient-to-r peer-checked:from-[#006D77] peer-checked:to-[#20B8B0] shadow-inner"></div>
                 </label>
               </div>
             </div>
 
-            <div className="p-space-md rounded-xl bg-surface-container-low border border-surface-container flex items-center gap-3">
-              <span className="material-symbols-outlined text-outline text-[18px]">verified</span>
-              <span className="font-body-sm text-xs text-on-surface font-medium">
+            <div className="p-4 rounded-xl bg-[#EAF8F7] border border-[#20B8B0]/30 flex items-center gap-3">
+              <span className="material-symbols-outlined text-[#006D77] text-[18px]">verified</span>
+              <span className="text-xs text-slate-700 font-medium">
                 Risk signals guide investigation and review. High risk does not automatically mean fraud.
               </span>
             </div>
@@ -563,26 +563,26 @@ export const SettingsPage: React.FC = () => {
           {/* SECTION 4: Notifications */}
           <section
             id="notifications"
-            className="p-space-lg sm:p-space-xl rounded-2xl bg-surface-container-lowest shadow-sm border border-surface-container flex flex-col gap-space-lg"
+            className="p-5 sm:p-6 rounded-2xl bg-white shadow-sm border border-[#C2EAE7]/70 flex flex-col gap-5"
           >
-            <div className="flex flex-col gap-1 pb-space-sm border-b border-surface-container">
+            <div className="flex flex-col gap-1 pb-3 border-b border-slate-100">
               <div className="flex items-center gap-2">
-                <span className="material-symbols-outlined text-primary text-[22px]">notifications</span>
-                <h2 className="font-headline-md text-lg sm:text-headline-md font-bold text-on-surface tracking-tight">
+                <span className="material-symbols-outlined text-[#006D77] text-[22px]">notifications</span>
+                <h2 className="text-base sm:text-lg font-bold text-[#17324D] tracking-tight">
                   Notifications
                 </h2>
               </div>
-              <p className="font-body-sm text-xs text-on-surface-variant">
+              <p className="text-xs text-slate-500">
                 Configure auditor alerts and escalation dispatch channels.
               </p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-space-md">
-              <div className="p-space-md rounded-xl bg-surface-container-low border border-surface-container flex flex-col justify-between gap-3">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="p-4 rounded-xl bg-[#f8fbfa] border border-[#C2EAE7]/70 flex flex-col justify-between gap-3 shadow-2xs hover:border-[#20B8B0] hover:bg-white transition-all">
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex items-center gap-2">
-                    <span className="material-symbols-outlined text-secondary text-[20px]">assignment_late</span>
-                    <span className="font-label-md text-xs sm:text-sm font-semibold text-on-surface">New Human Review</span>
+                    <span className="material-symbols-outlined text-[#006D77] text-[20px]">assignment_late</span>
+                    <span className="text-xs sm:text-sm font-bold text-[#17324D]">New Human Review</span>
                   </div>
                   <label className="relative inline-flex items-center cursor-pointer shrink-0">
                     <input
@@ -591,19 +591,19 @@ export const SettingsPage: React.FC = () => {
                       onChange={(e) => setNotifications({ ...notifications, newHumanReview: e.target.checked })}
                       className="sr-only peer"
                     />
-                    <div className="w-10 h-5 bg-surface-container-highest rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-surface-container-lowest after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-surface-container-lowest after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary-container"></div>
+                    <div className="w-10 h-5 bg-slate-200 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-gradient-to-r peer-checked:from-[#006D77] peer-checked:to-[#20B8B0]"></div>
                   </label>
                 </div>
-                <p className="font-body-sm text-xs text-on-surface-variant">
+                <p className="text-xs text-slate-500">
                   Immediate dispatch to lead auditors whenever manual triage is locked.
                 </p>
               </div>
 
-              <div className="p-space-md rounded-xl bg-surface-container-low border border-surface-container flex flex-col justify-between gap-3">
+              <div className="p-4 rounded-xl bg-[#f8fbfa] border border-[#C2EAE7]/70 flex flex-col justify-between gap-3 shadow-2xs hover:border-[#20B8B0] hover:bg-white transition-all">
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex items-center gap-2">
-                    <span className="material-symbols-outlined text-error text-[20px]">warning</span>
-                    <span className="font-label-md text-xs sm:text-sm font-semibold text-on-surface">High-Risk Detected</span>
+                    <span className="material-symbols-outlined text-rose-600 text-[20px]">warning</span>
+                    <span className="text-xs sm:text-sm font-bold text-[#17324D]">High-Risk Detected</span>
                   </div>
                   <label className="relative inline-flex items-center cursor-pointer shrink-0">
                     <input
@@ -612,19 +612,19 @@ export const SettingsPage: React.FC = () => {
                       onChange={(e) => setNotifications({ ...notifications, highRiskDetected: e.target.checked })}
                       className="sr-only peer"
                     />
-                    <div className="w-10 h-5 bg-surface-container-highest rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-surface-container-lowest after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-surface-container-lowest after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary-container"></div>
+                    <div className="w-10 h-5 bg-slate-200 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-gradient-to-r peer-checked:from-[#006D77] peer-checked:to-[#20B8B0]"></div>
                   </label>
                 </div>
-                <p className="font-body-sm text-xs text-on-surface-variant">
+                <p className="text-xs text-slate-500">
                   Priority alert triggered for travel claims scoring ≥ 70 on risk index.
                 </p>
               </div>
 
-              <div className="p-space-md rounded-xl bg-surface-container-low border border-surface-container flex flex-col justify-between gap-3">
+              <div className="p-4 rounded-xl bg-[#f8fbfa] border border-[#C2EAE7]/70 flex flex-col justify-between gap-3 shadow-2xs hover:border-[#20B8B0] hover:bg-white transition-all">
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex items-center gap-2">
-                    <span className="material-symbols-outlined text-primary text-[20px]">fact_check</span>
-                    <span className="font-label-md text-xs sm:text-sm font-semibold text-on-surface">Investigation Completed</span>
+                    <span className="material-symbols-outlined text-[#006D77] text-[20px]">fact_check</span>
+                    <span className="text-xs sm:text-sm font-bold text-[#17324D]">Investigation Completed</span>
                   </div>
                   <label className="relative inline-flex items-center cursor-pointer shrink-0">
                     <input
@@ -633,19 +633,19 @@ export const SettingsPage: React.FC = () => {
                       onChange={(e) => setNotifications({ ...notifications, investigationCompleted: e.target.checked })}
                       className="sr-only peer"
                     />
-                    <div className="w-10 h-5 bg-surface-container-highest rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-surface-container-lowest after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-surface-container-lowest after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary-container"></div>
+                    <div className="w-10 h-5 bg-slate-200 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-gradient-to-r peer-checked:from-[#006D77] peer-checked:to-[#20B8B0]"></div>
                   </label>
                 </div>
-                <p className="font-body-sm text-xs text-on-surface-variant">
+                <p className="text-xs text-slate-500">
                   Daily summary digest aggregating automatically resolved refund records.
                 </p>
               </div>
 
-              <div className="p-space-md rounded-xl bg-surface-container-low border border-surface-container flex flex-col justify-between gap-3">
+              <div className="p-4 rounded-xl bg-[#f8fbfa] border border-[#C2EAE7]/70 flex flex-col justify-between gap-3 shadow-2xs hover:border-[#20B8B0] hover:bg-white transition-all">
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex items-center gap-2">
-                    <span className="material-symbols-outlined text-outline text-[20px]">sync_alt</span>
-                    <span className="font-label-md text-xs sm:text-sm font-semibold text-on-surface">Refund Decision Updated</span>
+                    <span className="material-symbols-outlined text-[#006D77] text-[20px]">sync_alt</span>
+                    <span className="text-xs sm:text-sm font-bold text-[#17324D]">Refund Decision Updated</span>
                   </div>
                   <label className="relative inline-flex items-center cursor-pointer shrink-0">
                     <input
@@ -654,10 +654,10 @@ export const SettingsPage: React.FC = () => {
                       onChange={(e) => setNotifications({ ...notifications, refundDecisionUpdated: e.target.checked })}
                       className="sr-only peer"
                     />
-                    <div className="w-10 h-5 bg-surface-container-highest rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-surface-container-lowest after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-surface-container-lowest after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary-container"></div>
+                    <div className="w-10 h-5 bg-slate-200 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-gradient-to-r peer-checked:from-[#006D77] peer-checked:to-[#20B8B0]"></div>
                   </label>
                 </div>
-                <p className="font-body-sm text-xs text-on-surface-variant">
+                <p className="text-xs text-slate-500">
                   Instant webhook notifications upon senior auditor sign-off or carrier rejection.
                 </p>
               </div>
@@ -667,48 +667,48 @@ export const SettingsPage: React.FC = () => {
           {/* SECTION 5: AI Investigation Preferences */}
           <section
             id="ai-preferences"
-            className="p-space-lg sm:p-space-xl rounded-2xl bg-surface-container-lowest shadow-sm border border-surface-container flex flex-col gap-space-lg"
+            className="p-5 sm:p-6 rounded-2xl bg-white shadow-sm border border-[#C2EAE7]/70 flex flex-col gap-5"
           >
-            <div className="flex flex-col gap-1 pb-space-sm border-b border-surface-container">
+            <div className="flex flex-col gap-1 pb-3 border-b border-slate-100">
               <div className="flex items-center gap-2">
-                <span className="material-symbols-outlined text-primary text-[22px]">smart_toy</span>
-                <h2 className="font-headline-md text-lg sm:text-headline-md font-bold text-on-surface tracking-tight">
+                <span className="material-symbols-outlined text-[#006D77] text-[22px]">smart_toy</span>
+                <h2 className="text-base sm:text-lg font-bold text-[#17324D] tracking-tight">
                   AI Investigation Preferences
                 </h2>
               </div>
-              <p className="font-body-sm text-xs text-on-surface-variant">
+              <p className="text-xs text-slate-500">
                 Core intelligence and explainability configuration for the refund engine.
               </p>
             </div>
 
-            {/* Obsidian Copilot Engine Status Pill */}
-            <div className="p-space-md rounded-2xl bg-inverse-surface text-inverse-on-surface flex items-center justify-between shadow-md border border-white/10">
+            {/* Signature Oceanic Card - Engine Status Pill */}
+            <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-[#0d283e] via-[#006D77] to-[#0a1e2e] text-white flex items-center justify-between shadow-md border border-white/10">
               <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-xl bg-surface-container-highest/20 flex items-center justify-center text-primary-container">
-                  <span className="material-symbols-outlined text-[20px]">psychology</span>
+                <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center text-[#20B8B0] border border-white/10">
+                  <span className="material-symbols-outlined text-[22px]">psychology</span>
                 </div>
                 <div>
-                  <span className="font-label-md text-xs sm:text-sm font-semibold text-inverse-on-surface">
+                  <span className="text-xs sm:text-sm font-bold text-white flex items-center gap-1.5 font-['Plus_Jakarta_Sans']">
                     Agent Travel Autonomous Engine
                   </span>
-                  <p className="font-body-sm text-xs text-tertiary-fixed-dim">
+                  <p className="text-xs text-white/70">
                     Zero-loss carrier telemetry reconciler active
                   </p>
                 </div>
               </div>
-              <span className="px-2.5 py-1 rounded-full bg-primary-container text-on-primary-container font-label-sm text-[11px] font-bold uppercase tracking-wider">
+              <span className="px-3 py-1 rounded-full bg-[#E8B86D] text-[#0d283e] text-[11px] font-black uppercase tracking-wider shadow-xs">
                 Nominal
               </span>
             </div>
 
-            <div className="flex flex-col gap-space-sm">
+            <div className="flex flex-col gap-3">
               {/* Toggle 1 */}
-              <div className="p-space-md rounded-xl bg-surface-container-low border border-surface-container flex items-center justify-between gap-4">
+              <div className="p-4 rounded-xl bg-[#f8fbfa] border border-[#C2EAE7]/70 flex items-center justify-between gap-4 shadow-2xs hover:border-[#20B8B0] hover:bg-white transition-all">
                 <div className="flex items-center gap-3">
-                  <span className="material-symbols-outlined text-primary text-[20px]">neurology</span>
+                  <span className="material-symbols-outlined text-[#006D77] text-[20px]">neurology</span>
                   <div>
-                    <span className="font-label-md text-xs sm:text-sm font-semibold text-on-surface">AI Investigation</span>
-                    <p className="font-body-sm text-xs text-on-surface-variant">
+                    <span className="text-xs sm:text-sm font-bold text-[#17324D]">AI Investigation</span>
+                    <p className="text-xs text-slate-500">
                       Autonomous multi-agent parsing of airline PNRs and ticket coupon history.
                     </p>
                   </div>
@@ -720,17 +720,17 @@ export const SettingsPage: React.FC = () => {
                     onChange={(e) => setAiPreferences({ ...aiPreferences, aiInvestigation: e.target.checked })}
                     className="sr-only peer"
                   />
-                  <div className="w-11 h-6 bg-surface-container-highest peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-surface-container-lowest after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-surface-container-lowest after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-container"></div>
+                  <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-gradient-to-r peer-checked:from-[#006D77] peer-checked:to-[#20B8B0] shadow-inner"></div>
                 </label>
               </div>
 
               {/* Toggle 2 */}
-              <div className="p-space-md rounded-xl bg-surface-container-low border border-surface-container flex items-center justify-between gap-4">
+              <div className="p-4 rounded-xl bg-[#f8fbfa] border border-[#C2EAE7]/70 flex items-center justify-between gap-4 shadow-2xs hover:border-[#20B8B0] hover:bg-white transition-all">
                 <div className="flex items-center gap-3">
-                  <span className="material-symbols-outlined text-secondary text-[20px]">insights</span>
+                  <span className="material-symbols-outlined text-[#006D77] text-[20px]">insights</span>
                   <div>
-                    <span className="font-label-md text-xs sm:text-sm font-semibold text-on-surface">AI Recommendations</span>
-                    <p className="font-body-sm text-xs text-on-surface-variant">
+                    <span className="text-xs sm:text-sm font-bold text-[#17324D]">AI Recommendations</span>
+                    <p className="text-xs text-slate-500">
                       Auto-computes suggested monetary payout based on fare class and disruption cause.
                     </p>
                   </div>
@@ -742,17 +742,17 @@ export const SettingsPage: React.FC = () => {
                     onChange={(e) => setAiPreferences({ ...aiPreferences, aiRecommendations: e.target.checked })}
                     className="sr-only peer"
                   />
-                  <div className="w-11 h-6 bg-surface-container-highest peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-surface-container-lowest after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-surface-container-lowest after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-container"></div>
+                  <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-gradient-to-r peer-checked:from-[#006D77] peer-checked:to-[#20B8B0] shadow-inner"></div>
                 </label>
               </div>
 
               {/* Toggle 3 */}
-              <div className="p-space-md rounded-xl bg-surface-container-low border border-surface-container flex items-center justify-between gap-4">
+              <div className="p-4 rounded-xl bg-[#f8fbfa] border border-[#C2EAE7]/70 flex items-center justify-between gap-4 shadow-2xs hover:border-[#20B8B0] hover:bg-white transition-all">
                 <div className="flex items-center gap-3">
-                  <span className="material-symbols-outlined text-primary text-[20px]">description</span>
+                  <span className="material-symbols-outlined text-[#006D77] text-[20px]">description</span>
                   <div>
-                    <span className="font-label-md text-xs sm:text-sm font-semibold text-on-surface">Evidence-Based Reasoning</span>
-                    <p className="font-body-sm text-xs text-on-surface-variant">
+                    <span className="text-xs sm:text-sm font-bold text-[#17324D]">Evidence-Based Reasoning</span>
+                    <p className="text-xs text-slate-500">
                       Generates human-readable citation trees linked to DGCA & EU261 regulatory clauses.
                     </p>
                   </div>
@@ -764,19 +764,19 @@ export const SettingsPage: React.FC = () => {
                     onChange={(e) => setAiPreferences({ ...aiPreferences, evidenceBasedReasoning: e.target.checked })}
                     className="sr-only peer"
                   />
-                  <div className="w-11 h-6 bg-surface-container-highest peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-surface-container-lowest after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-surface-container-lowest after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-container"></div>
+                  <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-gradient-to-r peer-checked:from-[#006D77] peer-checked:to-[#20B8B0] shadow-inner"></div>
                 </label>
               </div>
 
               {/* Toggle 4 */}
-              <div className="p-space-md rounded-xl bg-surface-container-low border border-surface-container flex items-center justify-between gap-4">
+              <div className="p-4 rounded-xl bg-[#f8fbfa] border border-[#C2EAE7]/70 flex items-center justify-between gap-4 shadow-2xs hover:border-[#20B8B0] hover:bg-white transition-all">
                 <div className="flex items-center gap-3">
-                  <span className="material-symbols-outlined text-outline text-[20px]">verified</span>
+                  <span className="material-symbols-outlined text-[#006D77] text-[20px]">verified</span>
                   <div>
-                    <span className="font-label-md text-xs sm:text-sm font-semibold text-on-surface">
+                    <span className="text-xs sm:text-sm font-bold text-[#17324D]">
                       Human Approval for Significant Refunds
                     </span>
-                    <p className="font-body-sm text-xs text-on-surface-variant">
+                    <p className="text-xs text-slate-500">
                       Forces supervisor electronic signature before any ledger adjustment executes.
                     </p>
                   </div>
@@ -788,17 +788,17 @@ export const SettingsPage: React.FC = () => {
                     onChange={(e) => setAiPreferences({ ...aiPreferences, humanApprovalSignificant: e.target.checked })}
                     className="sr-only peer"
                   />
-                  <div className="w-11 h-6 bg-surface-container-highest peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-surface-container-lowest after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-surface-container-lowest after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-container"></div>
+                  <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-gradient-to-r peer-checked:from-[#006D77] peer-checked:to-[#20B8B0] shadow-inner"></div>
                 </label>
               </div>
             </div>
 
             {/* Note */}
-            <div className="p-space-md rounded-xl bg-tertiary-fixed/30 border border-tertiary-fixed/60 flex items-start gap-space-sm">
-              <span className="material-symbols-outlined text-secondary text-[22px] shrink-0 mt-0.5">shield</span>
-              <div className="flex flex-col">
-                <span className="font-label-md text-xs font-semibold text-on-surface">Governance Guarantee</span>
-                <p className="font-body-sm text-xs text-on-tertiary-container mt-0.5">
+            <div className="p-4 rounded-xl bg-[#FEF7EA] border border-[#E8B86D]/40 flex items-start gap-3">
+              <span className="material-symbols-outlined text-[#B87A1E] text-[22px] shrink-0 mt-0.5">shield</span>
+              <div className="flex flex-col text-[#8A5816]">
+                <span className="text-xs font-bold">Governance Guarantee</span>
+                <p className="text-xs mt-0.5 leading-relaxed">
                   AI investigates evidence and recommends actions. It does not make irreversible financial decisions on its own.
                 </p>
               </div>
@@ -806,10 +806,10 @@ export const SettingsPage: React.FC = () => {
           </section>
 
           {/* Bottom Page Actions (Sticky Bar) */}
-          <div className="sticky bottom-6 z-30 p-space-md rounded-2xl bg-surface-container-lowest/95 backdrop-blur-md shadow-xl border border-surface-container flex flex-col sm:flex-row items-center justify-between gap-4">
-            <div className="flex items-center gap-2 text-outline">
-              <span className="material-symbols-outlined text-primary text-[18px]">lock_reset</span>
-              <span className="font-body-sm text-xs text-on-surface-variant">
+          <div className="sticky bottom-6 z-30 p-4 rounded-2xl bg-white/95 backdrop-blur-md shadow-xl border border-[#C2EAE7]/70 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div className="flex items-center gap-2 text-slate-500">
+              <span className="material-symbols-outlined text-[#006D77] text-[18px]">lock_reset</span>
+              <span className="text-xs">
                 All changes logged to platform audit ledger.
               </span>
             </div>
@@ -821,7 +821,7 @@ export const SettingsPage: React.FC = () => {
                   setPolicies(settings.policies);
                   setRiskRules(settings.riskRules);
                 }}
-                className="px-space-md py-2.5 rounded-full font-label-md text-xs sm:text-sm text-on-surface-variant hover:bg-surface-container transition-colors cursor-pointer"
+                className="px-4 py-2 rounded-full text-xs sm:text-sm font-bold text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors cursor-pointer"
                 type="button"
               >
                 Cancel
@@ -829,7 +829,7 @@ export const SettingsPage: React.FC = () => {
               <button
                 onClick={handleSave}
                 disabled={isSaving}
-                className="px-space-xl py-2.5 rounded-full bg-primary-container text-on-primary-container font-label-md text-xs sm:text-sm font-semibold hover:shadow-lg transition-all flex items-center gap-2 cursor-pointer disabled:opacity-60"
+                className="px-6 py-2.5 rounded-full bg-gradient-to-r from-[#006D77] to-[#20B8B0] hover:from-[#005a63] hover:to-[#1aa39b] text-white text-xs sm:text-sm font-bold shadow-md hover:shadow-lg transition-all flex items-center gap-2 cursor-pointer disabled:opacity-60"
                 type="button"
               >
                 {isSaving ? (

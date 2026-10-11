@@ -8,15 +8,19 @@ export const AppShell: React.FC = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   return (
-    <div className="min-h-screen bg-surface font-body-md text-on-surface">
-      <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-      
-      <div className="lg:pl-64 flex flex-col min-h-screen">
-        <TopBar onMenuClick={() => setSidebarOpen(true)} />
-        
-        <main className="flex-1 w-full pt-16 px-space-md lg:px-space-xl py-space-lg bg-surface">
-          <Outlet />
-        </main>
+    <div className="min-h-screen bg-[#fcfcfd] font-sans text-gray-900 flex flex-col selection:bg-[#006D77] selection:text-white">
+      <div className="flex flex-1 relative min-h-screen">
+        {/* Sleek Oceanic Audit Sidebar */}
+        <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+
+        {/* Content Column */}
+        <div className="lg:pl-64 flex flex-col flex-1 min-w-0">
+          <TopBar onMenuClick={() => setSidebarOpen(true)} />
+
+          <main className="flex-1 w-full px-4 sm:px-6 lg:px-8 py-6 bg-[#fcfcfd]">
+            <Outlet />
+          </main>
+        </div>
       </div>
 
       <SearchModal />
