@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { TransportIllustration, TransportMode } from '../components/common/TransportIllustration';
+import { CustomerVerificationFlow } from '../components/landing/CustomerVerificationFlow';
 
 export const LandingPage: React.FC = () => {
   const navigate = useNavigate();
@@ -216,17 +217,21 @@ export const LandingPage: React.FC = () => {
 
               {/* Hero Headline */}
               <h1 className="font-display-lg text-3xl sm:text-4xl lg:text-display-lg text-on-surface tracking-tight mt-space-sm max-w-4xl font-extrabold leading-tight">
-                Your Travel Refund,{' '}
+                AI-Powered Travel Refund{' '}
                 <span className="bg-gradient-to-r from-on-surface via-primary to-secondary bg-clip-text text-transparent">
-                  Simplified by AI.
+                  Investigation & Policy Verification
                 </span>
               </h1>
 
-              {/* Subtitle */}
+              {/* Subtitle with Requirement 9 mandatory wording */}
               <p className="font-body-lg text-base sm:text-lg text-tertiary mt-space-sm max-w-2xl text-balance">
-                Get refunds for cancelled or disrupted travel bookings with help from AI. We check your booking,
-                cancellation details, and refund policy to recommend the right refund action.
+                Verify your travel refund eligibility using applicable policies, booking evidence, and transparent calculations.
               </p>
+
+              {/* 7-Step Guided Customer Verification Flow (Requirement 9) */}
+              <div className="w-full mt-space-xl">
+                <CustomerVerificationFlow />
+              </div>
 
               {/* Central Trip Search / Claim Dispatch Console */}
               <form

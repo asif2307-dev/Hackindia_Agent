@@ -76,7 +76,7 @@ export const SearchModal: React.FC = () => {
             <span className="font-label-sm text-[11px] uppercase tracking-wider text-outline px-2">
               Platform Views
             </span>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-2">
+            <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 mt-2">
               <button
                 onClick={() => handleNavigatePage('/dashboard')}
                 className="flex items-center gap-2 p-2 rounded-xl bg-surface-container-low hover:bg-surface-container text-left text-xs font-semibold text-on-surface transition-colors"
@@ -92,11 +92,18 @@ export const SearchModal: React.FC = () => {
                 <span>Case Detail</span>
               </button>
               <button
+                onClick={() => handleNavigatePage('/policies')}
+                className="flex items-center gap-2 p-2 rounded-xl bg-surface-container-low hover:bg-surface-container text-left text-xs font-semibold text-on-surface transition-colors"
+              >
+                <span className="material-symbols-outlined text-[18px] text-primary">gavel</span>
+                <span>Policies</span>
+              </button>
+              <button
                 onClick={() => handleNavigatePage('/reviews')}
                 className="flex items-center gap-2 p-2 rounded-xl bg-surface-container-low hover:bg-surface-container text-left text-xs font-semibold text-on-surface transition-colors"
               >
                 <span className="material-symbols-outlined text-[18px] text-secondary">rate_review</span>
-                <span>Human Review</span>
+                <span>Review</span>
               </button>
               <button
                 onClick={() => handleNavigatePage('/analytics')}

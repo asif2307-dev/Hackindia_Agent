@@ -12,13 +12,74 @@ export type InvestigationStatus =
   | 'Rejected'
   | 'Pending Human Approval';
 
+export type InvestigationOutcome =
+  | 'Eligible for Full Refund'
+  | 'Eligible for Partial Refund'
+  | 'Not Eligible under Verified Policy'
+  | 'More Evidence Required'
+  | 'Human Review Required';
+
+export type TransportType = 'flight' | 'train' | 'bus' | 'ride';
+
+export type PolicyType = 'legal_mandate' | 'operator_contract' | 'internal_risk_rule';
+
+export interface PolicyRule {
+  id: string;
+  operatorOrPlatform: string;
+  transportType: TransportType | 'all';
+  reason: string;
+  policyType: PolicyType;
+  clauseRef: string;
+  title: string;
+  summary: string;
+  conditions: string[];
+  exceptions: string[];
+  calculationFormula: string;
+  effectiveDate: string;
+  expiryDate: string;
+  sourceUrlOrDocument: string;
+  version: string;
+  lastVerifiedDate: string;
+  verified: boolean;
+}
+
+export interface FareDistanceAudit {
+  isApplicable: boolean;
+  expectedRouteDescription: string;
+  actualRouteDescription?: string;
+  expectedDistanceKm: number;
+  actualDistanceKm: number;
+  distanceDeviationKm: number;
+  distanceDeviationPct: number;
+  tolerancePct: number;
+  toleranceExceeded: boolean;
+  baseFare: number;
+  ratePerKm: number;
+  waitingCharges: number;
+  surcharges: { name: string; amount: number; disputed: boolean; note?: string }[];
+  fareCharged: number;
+  recalculatedFare: number;
+  potentialDifference: number;
+  eligibleAdjustment: number;
+  deviationExplanation: string;
+  trafficCongestionChecked: boolean;
+  roadClosureReported: boolean;
+  gpsIntegrityStatus: 'High Precision' | 'Moderate Multipath' | 'Unreliable';
+  nonPunitiveDriverFinding: string;
+}
+
 export interface InvestigationStep {
   stepNumber: string;
   codeName: string;
   title: string;
   summary: string;
-  status: 'Complete' | 'In Progress' | 'Pending';
+  status: 'Complete' | 'In Progress' | 'Pending' | 'Action Needed' | 'Flagged';
   statusLabel?: string;
+  evidenceChecked?: string[];
+  findings?: string;
+  applicablePolicy?: string;
+  confidenceOrLimitations?: string;
+  explanation?: string;
 }
 
 export interface EvidenceArtifact {
@@ -31,6 +92,14 @@ export interface EvidenceArtifact {
   source: string;
   timestamp: string;
   isFullWidth?: boolean;
+  fileHash?: string;
+  integrityVerified?: boolean;
+  duplicateDetection?: {
+    isDuplicate: boolean;
+    matchedCaseId?: string;
+    message?: string;
+  };
+  piiMasked?: boolean;
 }
 
 export interface AuditLogItem {
@@ -39,6 +108,8 @@ export interface AuditLogItem {
   title: string;
   description?: string;
   dotColor: string;
+  actorRole?: string;
+  integrityHash?: string;
 }
 
 export interface InvestigationCase {
@@ -54,7 +125,7 @@ export interface InvestigationCase {
   carrier: {
     name: string;
     code: string;
-    type: 'flight' | 'train' | 'bus';
+    type: TransportType;
     route: string;
     seat?: string;
     fareClass?: string;
@@ -80,6 +151,24 @@ export interface InvestigationCase {
   steps: InvestigationStep[];
   artifacts: EvidenceArtifact[];
   auditLog: AuditLogItem[];
+
+  // Rich AI Investigation extensions
+  outcome?: InvestigationOutcome;
+  customerIssue?: string;
+  policyCitation?: {
+    policyId: string;
+    clauseRef: string;
+    title: string;
+    source: string;
+    effectiveDate: string;
+    policyType: PolicyType;
+    verified: boolean;
+  };
+  fareDistanceAudit?: FareDistanceAudit;
+  missingEvidence?: string[];
+  appealNotes?: string;
+  integrityHash?: string;
+  scenarioKey?: string;
 }
 
 export interface AnalyticsSummary {
@@ -138,7 +227,7 @@ export interface BookingRecord {
   carrier: {
     name: string;
     code: string;
-    type: 'flight' | 'train' | 'bus';
+    type: TransportType;
     route: string;
     seat: string;
     fareClass: string;
@@ -151,13 +240,17 @@ export interface BookingRecord {
     | 'Confirmed / On Time'
     | 'Runway Grounded'
     | 'Missed Connection'
-    | 'Schedule Altered';
+    | 'Schedule Altered'
+    | 'Route Deviation / Overcharge'
+    | 'Fare Surcharge Dispute';
   refundStatus:
     | 'Full Refund Eligible'
     | 'Disbursed'
     | 'Under Investigation'
     | 'TDR Auto-Filed'
     | 'In Review'
-    | 'Not Claimed';
+    | 'Not Claimed'
+    | 'Partial Refund Eligible'
+    | 'Evidence Required';
   relatedInvestigationId?: string;
 }

@@ -1,11 +1,24 @@
 import React, { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useInvestigation } from '../context/InvestigationContext';
+import { ExplainablePipeline } from '../components/investigation/ExplainablePipeline';
+import { FareDistanceModule } from '../components/investigation/FareDistanceModule';
+import { allDemoScenarios } from '../data/demoScenarios';
 
 export const CaseDetailPage: React.FC = () => {
   const navigate = useNavigate();
   const { id } = useParams<{ id?: string }>();
-  const { cases, selectedCase, approveRefund } = useInvestigation();
+  const {
+    cases,
+    selectedCase,
+    selectCaseById,
+    approveRefund,
+    requestManualReview,
+    requestMoreEvidence,
+    rejectRecommendation,
+    updateToleranceRule,
+    fileAppeal,
+  } = useInvestigation();
 
   const cleanId = (id || selectedCase.id).replace('#', '').toLowerCase();
   const currentCase =
@@ -17,12 +30,18 @@ export const CaseDetailPage: React.FC = () => {
 
   const [isReevaluating, setIsReevaluating] = useState(false);
   const [successToast, setSuccessToast] = useState<string | null>(null);
+  const [showAppealModal, setShowAppealModal] = useState(false);
+  const [appealText, setAppealText] = useState('');
+  const [showEvidenceModal, setShowEvidenceModal] = useState(false);
+  const [evidenceNote, setEvidenceNote] = useState('');
+  const [rejectReason, setRejectReason] = useState('');
+  const [showRejectModal, setShowRejectModal] = useState(false);
 
   const handleReevaluate = () => {
     setIsReevaluating(true);
     setTimeout(() => {
       setIsReevaluating(false);
-      setSuccessToast('Case re-evaluation complete: 5/5 evidence sources re-verified. 94% confidence maintained.');
+      setSuccessToast(`Case ${currentCase.caseRef} re-evaluated against latest policy rules. Evidence integrity confirmed.`);
       setTimeout(() => setSuccessToast(null), 4000);
     }, 1200);
   };
@@ -33,15 +52,136 @@ export const CaseDetailPage: React.FC = () => {
     setTimeout(() => setSuccessToast(null), 4000);
   };
 
+  const handleManualReview = () => {
+    requestManualReview(currentCase.id, 'Dispatched to 2nd-level carrier liaison review desk.');
+    setSuccessToast('Case escalated for manual carrier liaison verification.');
+    setTimeout(() => setSuccessToast(null), 4000);
+  };
+
+  const handleRequestMoreEvidence = () => {
+    requestMoreEvidence(currentCase.id, evidenceNote || 'Requested hospital discharge slip or registered doctor certificate.');
+    setShowEvidenceModal(false);
+    setEvidenceNote('');
+    setSuccessToast('Evidence request dispatched to customer portal.');
+    setTimeout(() => setSuccessToast(null), 4000);
+  };
+
+  const handleFileAppeal = () => {
+    if (!appealText.trim()) return;
+    fileAppeal(currentCase.id, appealText);
+    setShowAppealModal(false);
+    setAppealText('');
+    setSuccessToast('Passenger dispute appeal submitted to review queue.');
+    setTimeout(() => setSuccessToast(null), 4000);
+  };
+
+  const handleReject = () => {
+    if (!rejectReason.trim()) return;
+    rejectRecommendation(currentCase.id, rejectReason);
+    setShowRejectModal(false);
+    setRejectReason('');
+    setSuccessToast('Claim rejected with auditor justification.');
+    setTimeout(() => setSuccessToast(null), 4000);
+  };
+
+  const handleVerifyChecksum = (_artId: string, hash?: string) => {
+    setSuccessToast(`Checksum Verified: ${hash || 'sha256:7f83b165...'} matches registered tamper-proof artifact payload.`);
+    setTimeout(() => setSuccessToast(null), 3500);
+  };
+
+  const getOutcomeBadge = () => {
+    const outcome = currentCase.outcome || (
+      currentCase.decisionStatus === 'Approved'
+        ? 'Eligible for Full Refund'
+        : currentCase.decisionStatus === 'Under Human Review'
+        ? 'Human Review Required'
+        : 'Eligible for Full Refund'
+    );
+
+    switch (outcome) {
+      case 'Eligible for Full Refund':
+        return 'bg-primary-container text-on-primary-container border-primary';
+      case 'Eligible for Partial Refund':
+        return 'bg-primary-fixed text-on-primary-fixed-variant border-primary-container';
+      case 'More Evidence Required':
+        return 'bg-secondary-fixed text-on-secondary-fixed border-secondary';
+      case 'Human Review Required':
+        return 'bg-tertiary-fixed text-on-tertiary-fixed border-tertiary';
+      case 'Not Eligible under Verified Policy':
+        return 'bg-error-container text-on-error-container border-error';
+      default:
+        return 'bg-surface-container-high text-on-surface border-surface-container-highest';
+    }
+  };
+
   return (
     <div className="flex flex-col w-full gap-space-lg text-left pb-16">
-      {/* Toast */}
+      {/* Toast Notification */}
       {successToast && (
         <div className="fixed top-20 right-6 z-50 p-4 rounded-2xl bg-primary-container text-on-primary-container font-semibold shadow-2xl flex items-center gap-3 animate-fade-in border border-primary">
           <span className="material-symbols-outlined text-[22px]">task_alt</span>
           <span>{successToast}</span>
         </div>
       )}
+
+      {/* TOP SCENARIO SWITCHER STRIP (Requirement 10) */}
+      <div className="bg-surface-container-lowest p-space-md rounded-2xl border border-surface-container shadow-xs flex flex-col gap-space-xs">
+        <div className="flex items-center justify-between flex-wrap gap-2">
+          <div className="flex items-center gap-1.5">
+            <span className="material-symbols-outlined text-primary text-[18px]">science</span>
+            <span className="font-label-sm text-xs uppercase tracking-wider text-outline font-bold">
+              Interactive Demo Scenarios (Click to test):
+            </span>
+          </div>
+          <span className="font-code-sm text-[11px] text-on-surface-variant bg-surface-container px-2 py-0.5 rounded">
+            Fictional Demonstration Data
+          </span>
+        </div>
+
+        <div className="flex items-center gap-2 overflow-x-auto pb-1 pt-1 scrollbar-none">
+          {allDemoScenarios.map((demo) => {
+            const isSelected = demo.id === currentCase.id;
+            return (
+              <button
+                key={demo.id}
+                onClick={() => {
+                  selectCaseById(demo.id);
+                  navigate(`/refund-investigations/${demo.id}`);
+                }}
+                className={`px-3 py-1.5 rounded-xl font-label-md text-xs shrink-0 transition-all flex items-center gap-1.5 border cursor-pointer ${
+                  isSelected
+                    ? 'bg-primary-container text-on-primary-container border-primary font-bold shadow-xs'
+                    : 'bg-surface-container-low hover:bg-surface-container text-on-surface border-surface-container'
+                }`}
+              >
+                <span>
+                  {demo.carrier.type === 'flight'
+                    ? '✈️'
+                    : demo.carrier.type === 'train'
+                    ? '🚆'
+                    : demo.carrier.type === 'ride'
+                    ? '🚕'
+                    : '🚌'}
+                </span>
+                <span>{demo.caseRef}</span>
+                <span className="opacity-80 font-normal">
+                  {demo.id === 'AT-9842'
+                    ? 'Air India (Full)'
+                    : demo.id === 'INV-9840'
+                    ? 'IRCTC (>3h Delay)'
+                    : demo.id === 'RD-4409'
+                    ? 'Cab Detour (+64%)'
+                    : demo.id === 'BS-3021'
+                    ? 'Bus Surcharges'
+                    : demo.id === 'RF-1042'
+                    ? 'Duplicate Hash'
+                    : 'Medical Incomplete'}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
 
       {/* TOP BREADCRUMB & METADATA BAR */}
       <div className="flex flex-col gap-space-sm">
@@ -67,195 +207,235 @@ export const CaseDetailPage: React.FC = () => {
               type="button"
             >
               <span className="material-symbols-outlined text-[16px] text-on-surface-variant">download</span>
-              <span>Export Case Dossier</span>
+              <span>Export Dossier</span>
             </button>
             <button
-              onClick={() => window.print()}
+              onClick={() => setShowAppealModal(true)}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-surface-container-low hover:bg-surface-container text-on-surface font-label-md text-xs transition-all shadow-sm border border-surface-container cursor-pointer"
               type="button"
             >
-              <span className="material-symbols-outlined text-[16px] text-on-surface-variant">print</span>
-              <span>Print Summary</span>
+              <span className="material-symbols-outlined text-[16px] text-secondary">forum</span>
+              <span>File Appeal / Note</span>
             </button>
             <button
               onClick={handleReevaluate}
               disabled={isReevaluating}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-surface-container-highest hover:bg-surface-container-high text-on-surface font-label-md text-xs transition-all cursor-pointer disabled:opacity-50"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-primary-container hover:bg-primary-fixed-dim text-on-primary-container font-label-md text-xs font-bold transition-all cursor-pointer disabled:opacity-50"
               type="button"
             >
-              <span className={`material-symbols-outlined text-[16px] text-primary ${isReevaluating ? 'animate-spin' : ''}`}>
+              <span className={`material-symbols-outlined text-[16px] ${isReevaluating ? 'animate-spin' : ''}`}>
                 sync
               </span>
-              <span>{isReevaluating ? 'Re-evaluating...' : 'Re-evaluate Case'}</span>
+              <span>{isReevaluating ? 'Re-evaluating...' : 'Re-evaluate Policy'}</span>
             </button>
           </div>
         </div>
 
-        {/* MAIN HEADER ROW */}
-        <div className="bg-surface-container-lowest rounded-2xl p-space-lg sm:p-space-xl shadow-sm border border-surface-container flex flex-col xl:flex-row xl:items-center justify-between gap-space-md">
-          <div className="flex flex-col gap-space-xs">
-            <div className="flex items-center gap-space-sm flex-wrap">
-              <h1 className="font-headline-lg text-2xl sm:text-headline-lg font-bold text-on-surface tracking-tight">
-                Refund Investigation
-              </h1>
-              <span className="font-code-sm text-xs text-on-surface-variant px-2.5 py-0.5 rounded-md bg-surface-container">
-                {currentCase.caseRef}
-              </span>
-              <span className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-primary-fixed text-on-primary-container font-label-sm text-xs font-semibold">
-                <span className="w-1.5 h-1.5 rounded-full bg-primary"></span>
-                Investigation Complete
-              </span>
-            </div>
-            <p className="font-body-sm text-xs sm:text-sm text-on-surface-variant">
-              Automated policy arbitration and carrier telemetry reconciliation initiated for domestic scheduled trip interruption.
-            </p>
-          </div>
+        {/* MAIN CASE HEADER CARD */}
+        <div className="bg-surface-container-lowest rounded-2xl p-space-lg sm:p-space-xl shadow-sm border border-surface-container flex flex-col gap-space-md">
+          <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-space-md">
+            <div className="flex flex-col gap-space-xs">
+              <div className="flex items-center gap-space-sm flex-wrap">
+                <h1 className="font-headline-lg text-2xl sm:text-headline-lg font-bold text-on-surface tracking-tight">
+                  Refund Investigation Case
+                </h1>
+                <span className="font-code-sm text-xs sm:text-sm text-on-surface px-2.5 py-0.5 rounded-md bg-surface-container font-bold">
+                  {currentCase.caseRef}
+                </span>
+                <span className={`px-3 py-1 rounded-full text-xs font-bold border ${getOutcomeBadge()}`}>
+                  {currentCase.outcome || 'Eligible for Full Refund'}
+                </span>
+                {currentCase.integrityHash && (
+                  <span
+                    onClick={() => handleVerifyChecksum('case-hdr', currentCase.integrityHash)}
+                    className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-surface-container text-on-surface-variant font-code-sm text-[11px] cursor-pointer hover:bg-surface-container-high transition-colors"
+                    title="Click to verify cryptographic SHA-256 fingerprint"
+                  >
+                    <span className="material-symbols-outlined text-[13px] text-primary">fingerprint</span>
+                    <span>{currentCase.integrityHash.substring(0, 16)}...</span>
+                  </span>
+                )}
+              </div>
 
-          {/* KEY METRICS BANNER STRIP */}
-          <div className="flex items-center gap-space-md lg:gap-space-lg flex-wrap xl:flex-nowrap bg-surface-container-low p-space-md rounded-xl border border-surface-container">
-            <div className="flex flex-col">
-              <span className="font-label-sm text-[11px] text-on-surface-variant uppercase tracking-wider">Status</span>
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 mt-0.5 rounded-full bg-primary-fixed text-on-primary-container font-label-sm text-xs font-semibold">
-                <span className="w-1.5 h-1.5 rounded-full bg-primary"></span>
-                Complete
-              </span>
+              {/* Passenger & Carrier Metadata Bar */}
+              <div className="flex items-center gap-space-md text-xs text-on-surface-variant flex-wrap pt-1">
+                <span>
+                  <strong>Passenger:</strong> {currentCase.traveler.name} ({currentCase.traveler.tier})
+                </span>
+                <span>•</span>
+                <span>
+                  <strong>Carrier:</strong> {currentCase.carrier.name} ({currentCase.carrier.code})
+                </span>
+                <span>•</span>
+                <span>
+                  <strong>Route:</strong> {currentCase.carrier.route}
+                </span>
+                <span>•</span>
+                <span>
+                  <strong>Date:</strong> {currentCase.journeyDate}
+                </span>
+                <span>•</span>
+                <span>
+                  <strong>PNR / Identifier:</strong> {currentCase.pnr}
+                </span>
+              </div>
             </div>
-            <div className="h-8 w-px bg-surface-container-highest hidden sm:block"></div>
-            <div className="flex flex-col">
-              <span className="font-label-sm text-[11px] text-on-surface-variant uppercase tracking-wider">Risk Level</span>
-              <div className="flex items-center gap-1 mt-0.5">
-                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-primary-fixed text-on-primary-container font-label-sm text-xs font-semibold">
-                  <span className="w-1.5 h-1.5 rounded-full bg-primary"></span>
+
+            {/* KEY METRICS STRIP */}
+            <div className="flex items-center gap-space-md lg:gap-space-lg flex-wrap xl:flex-nowrap bg-surface-container-low p-space-md rounded-xl border border-surface-container">
+              <div className="flex flex-col">
+                <span className="font-label-sm text-[11px] text-on-surface-variant uppercase tracking-wider">
+                  Claimed Amount
+                </span>
+                <span className="font-headline-sm text-lg font-bold text-on-surface mt-0.5">
+                  {currentCase.claimAmountFormatted}
+                </span>
+              </div>
+              <div className="h-8 w-px bg-surface-container-highest hidden sm:block"></div>
+              <div className="flex flex-col">
+                <span className="font-label-sm text-[11px] text-on-surface-variant uppercase tracking-wider">
+                  Risk Level
+                </span>
+                <span
+                  className={`inline-flex items-center gap-1 px-2 py-0.5 mt-0.5 rounded-full text-xs font-semibold ${
+                    currentCase.riskLevel === 'Low Risk'
+                      ? 'bg-primary-fixed text-on-primary-container'
+                      : currentCase.riskLevel === 'Medium Risk'
+                      ? 'bg-secondary-fixed text-on-secondary-fixed'
+                      : 'bg-error-container text-on-error-container'
+                  }`}
+                >
+                  <span className="w-1.5 h-1.5 rounded-full bg-current"></span>
                   {currentCase.riskLevel}
                 </span>
               </div>
-            </div>
-            <div className="h-8 w-px bg-surface-container-highest hidden sm:block"></div>
-            <div className="flex flex-col">
-              <span className="font-label-sm text-[11px] text-on-surface-variant uppercase tracking-wider">AI Confidence</span>
-              <div className="flex items-center gap-1.5 mt-0.5">
-                <span className="font-headline-sm text-headline-sm font-bold text-on-surface">
+              <div className="h-8 w-px bg-surface-container-highest hidden sm:block"></div>
+              <div className="flex flex-col">
+                <span className="font-label-sm text-[11px] text-on-surface-variant uppercase tracking-wider">
+                  AI Confidence
+                </span>
+                <span className="font-headline-sm text-lg font-bold text-on-surface mt-0.5">
                   {currentCase.aiConfidence}%
                 </span>
-                <span className="material-symbols-outlined text-primary text-[18px]">verified</span>
+              </div>
+              <div className="h-8 w-px bg-surface-container-highest hidden sm:block"></div>
+              <div className="flex flex-col">
+                <span className="font-label-sm text-[11px] text-on-surface-variant uppercase tracking-wider">
+                  Recommended Action
+                </span>
+                <span className="font-headline-sm text-sm font-bold text-primary mt-0.5">
+                  {currentCase.recommendedAction}
+                </span>
               </div>
             </div>
-            <div className="h-8 w-px bg-surface-container-highest hidden sm:block"></div>
-            <div className="flex flex-col">
-              <span className="font-label-sm text-[11px] text-on-surface-variant uppercase tracking-wider">Evidence Strength</span>
-              <span className="font-label-md text-xs sm:text-sm font-semibold text-primary mt-0.5">
-                {currentCase.evidenceStrength}
-              </span>
-            </div>
-            <div className="h-8 w-px bg-surface-container-highest hidden sm:block"></div>
-            <div className="flex flex-col">
-              <span className="font-label-sm text-[11px] text-on-surface-variant uppercase tracking-wider">Recommended Action</span>
-              <span className="font-headline-md text-sm sm:text-base font-bold text-on-surface">
-                {currentCase.recommendedAction}
-              </span>
-            </div>
-            <div className="h-8 w-px bg-surface-container-highest hidden sm:block"></div>
-            <div className="flex flex-col">
-              <span className="font-label-sm text-[11px] text-on-surface-variant uppercase tracking-wider">Final Decision</span>
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 mt-0.5 rounded-full bg-surface-container-highest text-on-surface font-label-sm text-xs font-medium">
-                <span className="w-1.5 h-1.5 rounded-full bg-secondary"></span>
-                {currentCase.decisionStatus === 'Approved' ? 'Approved' : 'Pending Human Approval'}
-              </span>
-            </div>
           </div>
+
+          {/* Customer Submitted Issue Box */}
+          {currentCase.customerIssue && (
+            <div className="p-space-sm rounded-xl bg-surface-container-low border border-surface-container flex items-start gap-space-sm text-xs">
+              <span className="material-symbols-outlined text-outline text-[18px] shrink-0 mt-0.5">
+                record_voice_over
+              </span>
+              <div className="flex flex-col gap-0.5">
+                <span className="font-bold text-on-surface uppercase tracking-wider text-[11px]">
+                  Customer-Submitted Dispute Grounds:
+                </span>
+                <p className="text-on-surface-variant leading-relaxed">
+                  "{currentCase.customerIssue}"
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* Missing Evidence Alert (Requirement 7) */}
+          {currentCase.missingEvidence && currentCase.missingEvidence.length > 0 && (
+            <div className="p-space-md rounded-xl bg-secondary-fixed/30 border border-secondary/40 flex flex-col gap-space-xs text-xs">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 text-on-secondary-fixed font-bold">
+                  <span className="material-symbols-outlined text-[20px]">warning</span>
+                  <span>Missing Evidence Required to Support Claim</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowEvidenceModal(true)}
+                  className="px-3 py-1 rounded-full bg-secondary text-on-secondary font-label-sm text-xs font-semibold cursor-pointer hover:bg-secondary-container transition-colors"
+                >
+                  Request Documents from Passenger
+                </button>
+              </div>
+              <ul className="list-disc pl-5 text-on-secondary-fixed/90 space-y-1">
+                {currentCase.missingEvidence.map((m, idx) => (
+                  <li key={idx}>{m}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {/* Policy Attribution Box (Requirement 4) */}
+          {currentCase.policyCitation && (
+            <div className="p-space-sm rounded-xl bg-primary-fixed/20 border border-primary-container/40 flex flex-col sm:flex-row sm:items-center justify-between gap-space-sm text-xs">
+              <div className="flex flex-col gap-0.5">
+                <div className="flex items-center gap-2">
+                  <span className="font-label-sm text-[11px] uppercase tracking-wider font-bold text-primary">
+                    Verified Policy Attribution:
+                  </span>
+                  <span className="font-code-sm text-xs font-bold text-on-surface">
+                    {currentCase.policyCitation.clauseRef}
+                  </span>
+                  <span className="px-2 py-0.5 rounded-full bg-surface-container font-label-sm text-[10px] uppercase font-bold text-outline">
+                    {currentCase.policyCitation.policyType.replace('_', ' ')}
+                  </span>
+                </div>
+                <p className="font-medium text-on-surface">{currentCase.policyCitation.title}</p>
+                <p className="text-on-surface-variant text-[11px]">
+                  <strong>Legal Authority:</strong> {currentCase.policyCitation.source} (Effective: {currentCase.policyCitation.effectiveDate})
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => navigate('/policies')}
+                className="px-3 py-1.5 rounded-full bg-primary-container text-on-primary-container font-label-sm text-xs font-bold shrink-0 hover:bg-primary-fixed-dim transition-colors cursor-pointer"
+              >
+                Inspect in Policy Library
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
       {/* WORKSPACE GRID: 65% MAIN / 35% SIDEBAR */}
       <div className="grid grid-cols-1 xl:grid-cols-12 gap-space-lg items-start">
-        {/* LEFT COLUMN: MAIN INVESTIGATION WORKSPACE (Cols 1-8) */}
+        {/* LEFT COLUMN: MAIN WORKSPACE (Cols 1-8) */}
         <div className="xl:col-span-8 flex flex-col gap-space-lg">
-          {/* SECTION 1: AI INVESTIGATION PIPELINE */}
-          <div className="bg-surface-container-lowest rounded-2xl p-space-lg sm:p-space-xl shadow-sm border border-surface-container flex flex-col gap-space-md">
-            <div className="flex items-center justify-between pb-space-xs border-b border-surface-container">
-              <div>
-                <div className="flex items-center gap-2">
-                  <span className="material-symbols-outlined text-primary text-[22px]">account_tree</span>
-                  <h2 className="font-headline-sm text-headline-sm font-bold text-on-surface">
-                    AI Investigation Pipeline
-                  </h2>
-                </div>
-                <p className="font-body-sm text-xs text-on-surface-variant mt-0.5">
-                  8 of 8 investigation steps completed
-                </p>
-              </div>
-              <span className="px-2.5 py-1 rounded-full bg-primary-fixed text-on-primary-container font-code-sm text-xs font-semibold">
-                Investigation Complete
-              </span>
-            </div>
+          {/* SECTION 1: 8-STAGE EXPLAINABLE AI PIPELINE */}
+          <ExplainablePipeline steps={currentCase.steps} />
 
-            {/* PIPELINE STEPS TIMELINE */}
-            <div className="relative flex flex-col gap-space-md pt-space-xs">
-              {/* Continuous Track Line */}
-              <div className="absolute left-4 top-4 bottom-4 w-0.5 bg-surface-container"></div>
+          {/* SECTION 2: FARE & DISTANCE VERIFICATION MODULE (Requirement 5) */}
+          <FareDistanceModule
+            audit={currentCase.fareDistanceAudit}
+            caseId={currentCase.id}
+            carrierType={currentCase.carrier.type}
+            carrierRoute={currentCase.carrier.route}
+            onUpdateTolerance={(newTol) => updateToleranceRule(currentCase.id, newTol)}
+          />
 
-              {currentCase.steps.map((step, idx) => {
-                const isFinal = idx === currentCase.steps.length - 1;
-                return (
-                  <div key={step.stepNumber} className="relative flex items-start gap-space-md">
-                    <div
-                      className={`relative z-10 w-8 h-8 rounded-full flex items-center justify-center font-bold text-body-sm shadow-sm shrink-0 ${
-                        isFinal
-                          ? 'bg-primary text-on-primary shadow-md'
-                          : 'bg-primary-container text-on-primary-container'
-                      }`}
-                    >
-                      <span className="material-symbols-outlined text-[18px]">
-                        {isFinal ? 'stars' : 'check'}
-                      </span>
-                    </div>
-
-                    <div
-                      className={`flex-1 p-space-md rounded-xl flex flex-col gap-1 border ${
-                        isFinal
-                          ? 'bg-primary-fixed/20 border-primary-container/40 shadow-sm'
-                          : 'bg-surface-container-low border-surface-container'
-                      }`}
-                    >
-                      <div className="flex items-center justify-between flex-wrap gap-1">
-                        <div className="flex items-center gap-2">
-                          <span className="font-label-sm text-xs text-primary font-bold uppercase tracking-wider">
-                            Step {step.stepNumber}
-                          </span>
-                          <span className="font-headline-sm text-sm sm:text-[15px] font-semibold text-on-surface">
-                            {step.title}
-                          </span>
-                        </div>
-                        <span className="font-code-sm text-[11px] text-on-surface-variant font-medium">
-                          {step.statusLabel || 'Investigation Complete'}
-                        </span>
-                      </div>
-                      <p className="font-body-sm text-xs sm:text-sm text-on-surface-variant">
-                        {step.summary}
-                      </p>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* SECTION 2: VERIFIED EVIDENCE DOSSIER */}
+          {/* SECTION 3: VERIFIED EVIDENCE DOSSIER WITH SHA-256 HASHES & DUPLICATE CHECK */}
           <div className="bg-surface-container-lowest rounded-2xl p-space-lg sm:p-space-xl shadow-sm border border-surface-container flex flex-col gap-space-md">
             <div className="flex items-center justify-between pb-space-xs border-b border-surface-container">
               <div className="flex items-center gap-2">
                 <span className="material-symbols-outlined text-primary text-[22px]">inventory_2</span>
                 <div>
                   <h2 className="font-headline-sm text-headline-sm font-bold text-on-surface">
-                    Verified Evidence & Source Artifacts
+                    Verified Evidence Dossier & Cryptographic Audit
                   </h2>
                   <p className="font-body-sm text-xs text-on-surface-variant">
-                    Structured evidence corpus parsed from GDS, payment rail, and airline operational records
+                    SHA-256 cryptographic hashes preserve evidence integrity and intercept duplicate claims
                   </p>
                 </div>
               </div>
               <span className="font-label-sm text-xs text-on-surface-variant bg-surface-container px-2.5 py-1 rounded-md">
-                5 Core Artifacts
+                {currentCase.evidenceCount}
               </span>
             </div>
 
@@ -278,10 +458,39 @@ export const CaseDetailPage: React.FC = () => {
                       <span className="material-symbols-outlined text-[12px]">check_circle</span> Verified
                     </span>
                   </div>
-                  <div className="font-body-sm text-xs sm:text-sm text-on-surface">{art.content}</div>
+
+                  <div className="font-body-sm text-xs sm:text-sm text-on-surface leading-relaxed">
+                    {art.content}
+                  </div>
+
+                  {/* Duplicate Detection Alert Banner */}
+                  {art.duplicateDetection?.isDuplicate && (
+                    <div className="p-2 rounded-lg bg-error-container text-on-error-container text-xs flex items-center gap-2 font-bold animate-pulse">
+                      <span className="material-symbols-outlined text-[16px]">warning</span>
+                      <span>
+                        Duplicate Hash Alert: Matched {art.duplicateDetection.matchedCaseId} ({art.duplicateDetection.message})
+                      </span>
+                    </div>
+                  )}
+
+                  {/* SHA-256 Checksum Strip */}
+                  <div className="p-2 rounded-lg bg-surface-container-lowest border border-surface-container font-code-sm text-[11px] text-outline flex items-center justify-between">
+                    <div className="truncate mr-2">
+                      <span className="font-bold text-on-surface">SHA-256: </span>
+                      <span>{art.fileHash || 'sha256:7f83b1657ff1053b9241f8a846f32e95'}</span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleVerifyChecksum(art.id, art.fileHash)}
+                      className="text-primary hover:underline font-semibold shrink-0 cursor-pointer"
+                    >
+                      Verify
+                    </button>
+                  </div>
+
                   <div className="flex items-center justify-between pt-space-xs text-on-surface-variant font-code-sm text-[11px] border-t border-surface-container-high/60">
-                    <span>{art.source}</span>
-                    <span>{art.timestamp}</span>
+                    <span className="truncate mr-2">{art.source}</span>
+                    <span className="shrink-0">{art.timestamp}</span>
                   </div>
                 </div>
               ))}
@@ -294,126 +503,54 @@ export const CaseDetailPage: React.FC = () => {
           {/* CARD 1: INVESTIGATION SUMMARY */}
           <div className="bg-surface-container-lowest rounded-2xl p-space-lg shadow-sm border border-surface-container flex flex-col gap-space-md">
             <div className="flex items-center justify-between pb-space-xs border-b border-surface-container">
-              <h2 className="font-headline-sm text-headline-sm font-bold text-on-surface">Investigation Summary</h2>
+              <h2 className="font-headline-sm text-headline-sm font-bold text-on-surface">
+                Arbitration Synthesis
+              </h2>
               <span className="w-3 h-3 rounded-full bg-primary-container animate-pulse"></span>
             </div>
 
-            {/* METRIC DATA TABLE */}
-            <div className="flex flex-col gap-space-xs">
-              <div className="flex items-center justify-between py-1.5 bg-surface-container-low px-space-sm rounded-lg border border-surface-container">
-                <span className="font-body-sm text-xs text-on-surface-variant font-medium">Risk Level</span>
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-primary-fixed text-on-primary-container font-label-sm text-xs font-semibold">
-                  <span className="w-1.5 h-1.5 rounded-full bg-primary"></span>
-                  {currentCase.riskLevel}
-                </span>
-              </div>
-
-              <div className="flex items-center justify-between py-1.5 bg-surface-container-low px-space-sm rounded-lg border border-surface-container">
-                <span className="font-body-sm text-xs text-on-surface-variant font-medium">AI Assessment Confidence</span>
-                <div className="flex items-center gap-2">
-                  <div className="w-20 bg-surface-container h-2 rounded-full overflow-hidden">
-                    <div className="bg-primary-container h-full rounded-full" style={{ width: `${currentCase.aiConfidence}%` }}></div>
-                  </div>
-                  <span className="font-code-sm text-xs font-bold text-on-surface">{currentCase.aiConfidence}%</span>
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between py-1.5 bg-surface-container-low px-space-sm rounded-lg border border-surface-container">
-                <span className="font-body-sm text-xs text-on-surface-variant font-medium">Evidence Strength</span>
-                <span className="font-label-md text-xs font-semibold text-primary">{currentCase.evidenceStrength}</span>
-              </div>
-
-              <div className="flex items-center justify-between py-1.5 bg-surface-container-low px-space-sm rounded-lg border border-surface-container">
-                <span className="font-body-sm text-xs text-on-surface-variant font-medium">Recommended Action</span>
-                <span className="font-label-md text-xs font-bold text-on-surface">{currentCase.recommendedAction}</span>
-              </div>
-
-              <div className="flex items-center justify-between py-1.5 bg-surface-container-low px-space-sm rounded-lg border border-surface-container">
-                <span className="font-body-sm text-xs text-on-surface-variant font-medium">Final Decision</span>
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-surface-container-highest text-on-surface font-label-sm text-xs font-semibold">
-                  <span className="w-1.5 h-1.5 rounded-full bg-secondary"></span>
-                  {currentCase.decisionStatus === 'Approved' ? 'Approved' : 'Pending Human Approval'}
-                </span>
-              </div>
-            </div>
-
-            {/* VERIFIED EVIDENCE CHECKLIST */}
-            <div className="flex flex-col gap-space-xs pt-1">
-              <span className="font-label-sm text-[11px] uppercase font-semibold text-on-surface-variant tracking-wider">
-                Verified Evidence vs. AI Recommendation
-              </span>
-              <ul className="flex flex-col gap-2 mt-1">
-                <li className="flex items-start gap-2 text-xs font-body-sm text-on-surface">
-                  <span className="material-symbols-outlined text-primary text-[18px] shrink-0">check_circle</span>
-                  <span>5 of 5 Core Artifacts Verified with Carrier & GDS</span>
-                </li>
-                <li className="flex items-start gap-2 text-xs font-body-sm text-on-surface">
-                  <span className="material-symbols-outlined text-primary text-[18px] shrink-0">check_circle</span>
-                  <span>Zero Discrepancies or Prior Dispute Signals</span>
-                </li>
-                <li className="flex items-start gap-2 text-xs font-body-sm text-on-surface">
-                  <span className="material-symbols-outlined text-primary text-[18px] shrink-0">check_circle</span>
-                  <span>Policy supports full refund</span>
-                </li>
-              </ul>
-            </div>
+            <p className="font-body-sm text-xs sm:text-sm text-on-surface leading-relaxed bg-surface-container-low p-space-sm rounded-xl border border-surface-container">
+              {currentCase.synthesis}
+            </p>
 
             <div className="bg-surface-container-low p-space-sm rounded-lg border border-surface-container">
               <p className="font-body-sm text-xs text-on-surface-variant italic flex items-start gap-1.5">
                 <span className="material-symbols-outlined text-[16px] text-tertiary shrink-0 mt-0.5">info</span>
-                <span>AI recommendations are based on available evidence and require human authorization.</span>
+                <span>
+                  The AI platform assists arbitration by analyzing verified evidence and applicable policy clauses, without automatically accusing or penalizing customers or drivers.
+                </span>
               </p>
             </div>
           </div>
 
-          {/* CARD 2: AI REASONING PANEL */}
-          <div className="bg-surface-container-lowest rounded-2xl p-space-lg shadow-sm border border-surface-container flex flex-col gap-space-md">
-            <div className="flex items-center justify-between pb-space-xs border-b border-surface-container">
-              <div className="flex items-center gap-2">
-                <span className="material-symbols-outlined text-primary text-[20px]">psychology</span>
-                <h2 className="font-headline-sm text-sm sm:text-base font-bold text-on-surface">AI Reasoning</h2>
-              </div>
-              <span className="px-2 py-0.5 rounded-full bg-surface-container-high text-on-surface-variant font-label-sm text-[11px] font-medium">
-                Agent Synthesis
-              </span>
-            </div>
-            <div className="flex flex-col gap-1.5">
-              <span className="font-label-sm text-[11px] uppercase font-semibold text-on-surface-variant tracking-wider">
-                Agent interpretation of verified evidence
-              </span>
-              <p className="font-body-sm text-xs sm:text-sm text-on-surface leading-relaxed bg-surface-container-low p-space-sm rounded-xl border border-surface-container">
-                {currentCase.synthesis}
-              </p>
-            </div>
-          </div>
-
-          {/* CARD 3: HUMAN REVIEW & DECISION */}
+          {/* CARD 2: HUMAN REVIEW & ACTION ACTIONS */}
           <div className="bg-surface-container-lowest rounded-2xl p-space-lg shadow-sm border border-surface-container flex flex-col gap-space-md">
             <div className="flex items-center gap-2 pb-space-xs border-b border-surface-container">
               <span className="material-symbols-outlined text-secondary text-[22px]">verified_user</span>
-              <h2 className="font-headline-sm text-base font-bold text-on-surface">Human Review & Decision</h2>
+              <h2 className="font-headline-sm text-base font-bold text-on-surface">
+                Human Review & Action
+              </h2>
             </div>
 
-            <div className="flex flex-col gap-space-xs bg-surface-container-low p-space-sm rounded-xl border border-surface-container">
-              <div className="flex items-center justify-between py-1 text-xs">
+            <div className="flex flex-col gap-space-xs bg-surface-container-low p-space-sm rounded-xl border border-surface-container text-xs">
+              <div className="flex items-center justify-between py-1">
                 <span className="text-on-surface-variant font-medium">Recommended Action:</span>
                 <span className="font-bold text-on-surface">{currentCase.recommendedAction}</span>
               </div>
-              <div className="flex items-center justify-between py-1 text-xs">
+              <div className="flex items-center justify-between py-1">
                 <span className="text-on-surface-variant font-medium">Decision Status:</span>
                 <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-primary-fixed text-on-primary-container font-label-sm text-[11px] font-semibold">
                   <span className="w-1.5 h-1.5 rounded-full bg-primary"></span>
-                  {currentCase.decisionStatus === 'Approved' ? 'Approved by Auditor' : 'Agent Recommendation Ready'}
+                  {currentCase.decisionStatus}
                 </span>
               </div>
-              <div className="flex items-center justify-between py-1 text-xs">
-                <span className="text-on-surface-variant font-medium">Human Review Required:</span>
-                <span className="font-label-sm text-xs font-semibold text-secondary px-2 py-0.5 rounded bg-surface-container">
-                  Yes
-                </span>
+              <div className="flex items-center justify-between py-1">
+                <span className="text-on-surface-variant font-medium">Assigned Auditor:</span>
+                <span className="font-bold text-on-surface">{currentCase.assignedAuditor}</span>
               </div>
             </div>
 
+            {/* Action Buttons */}
             <div className="flex flex-col gap-space-xs pt-space-xs">
               <button
                 onClick={handleApprove}
@@ -421,45 +558,64 @@ export const CaseDetailPage: React.FC = () => {
                 type="button"
               >
                 <span className="material-symbols-outlined text-[18px]">check</span>
-                <span>Approve Refund • {currentCase.claimAmountFormatted}</span>
+                <span>Approve Refund ({currentCase.claimAmountFormatted})</span>
               </button>
+
               <button
-                onClick={() => navigate('/reviews')}
-                className="w-full py-2.5 px-4 rounded-full bg-surface-container-low hover:bg-surface-container text-on-surface font-label-md text-xs sm:text-sm font-semibold transition-all flex items-center justify-center gap-2 border border-surface-container cursor-pointer"
+                onClick={handleManualReview}
+                className="w-full py-2 px-4 rounded-full bg-surface-container-low hover:bg-surface-container text-on-surface font-label-md text-xs sm:text-sm font-semibold transition-all flex items-center justify-center gap-2 border border-surface-container cursor-pointer"
                 type="button"
               >
                 <span className="material-symbols-outlined text-[18px] text-on-surface-variant">person_search</span>
-                <span>Open Full Review & Approval Console</span>
+                <span>Escalate to Carrier Review Desk</span>
               </button>
-            </div>
 
-            <div className="bg-surface-container-low p-space-sm rounded-lg border border-surface-container">
-              <p className="font-body-sm text-xs text-on-surface-variant">
-                <strong className="text-on-surface font-semibold">Authorization Notice:</strong> The AI investigates evidence and recommends an action, but does not independently release funds; financial authorization rests with the human reviewer.
-              </p>
-            </div>
+              <button
+                onClick={() => setShowEvidenceModal(true)}
+                className="w-full py-2 px-4 rounded-full bg-surface-container-low hover:bg-surface-container text-on-surface font-label-md text-xs sm:text-sm font-semibold transition-all flex items-center justify-center gap-2 border border-surface-container cursor-pointer"
+                type="button"
+              >
+                <span className="material-symbols-outlined text-[18px] text-on-surface-variant">attachment</span>
+                <span>Request More Evidence</span>
+              </button>
 
-            <div className="pt-space-xs flex flex-col gap-1 border-t border-surface-container text-xs">
-              <span className="font-code-sm text-[11px] text-on-surface-variant">
-                Assigned Auditor: <strong className="text-on-surface font-semibold">Julian Hayes</strong> (Lead Auditor)
-              </span>
-              <span className="font-code-sm text-[11px] text-outline">Action will be logged to immutable audit trail.</span>
+              <button
+                onClick={() => setShowRejectModal(true)}
+                className="w-full py-1.5 px-4 rounded-full text-error hover:bg-error-container/20 font-label-md text-xs font-semibold transition-all flex items-center justify-center gap-1 cursor-pointer"
+                type="button"
+              >
+                <span className="material-symbols-outlined text-[16px]">close</span>
+                <span>Reject / Override AI Recommendation</span>
+              </button>
             </div>
           </div>
 
-          {/* CARD 4: CASE ACTIVITY & AUDIT LOG */}
+          {/* CARD 3: AUDIT TRAIL & HISTORY (Requirement 8) */}
           <div className="bg-surface-container-lowest rounded-2xl p-space-lg shadow-sm border border-surface-container flex flex-col gap-space-md">
             <div className="flex items-center justify-between pb-space-xs border-b border-surface-container">
-              <h3 className="font-headline-sm text-sm sm:text-base font-bold text-on-surface">Case Activity & Audit Log</h3>
-              <span className="material-symbols-outlined text-on-surface-variant text-[18px]">history</span>
+              <div className="flex items-center gap-1.5">
+                <span className="material-symbols-outlined text-on-surface-variant text-[18px]">history</span>
+                <h3 className="font-headline-sm text-sm sm:text-base font-bold text-on-surface">
+                  Chronological Audit Trail
+                </h3>
+              </div>
+              <span className="font-code-sm text-[11px] text-outline">Immutable Log</span>
             </div>
+
             <div className="flex flex-col gap-space-sm text-body-sm">
               {currentCase.auditLog.map((log) => (
-                <div key={log.id} className="flex items-start gap-space-sm pb-space-xs">
+                <div key={log.id} className="flex items-start gap-space-sm pb-space-xs border-b border-surface-container/40 last:border-0">
                   <span className={`w-2 h-2 rounded-full ${log.dotColor} mt-1.5 shrink-0`}></span>
-                  <div className="flex flex-col text-xs">
-                    <span className="font-code-sm text-[11px] text-on-surface-variant font-medium">{log.time}</span>
-                    <span className="font-body-sm text-on-surface font-medium">{log.title}</span>
+                  <div className="flex flex-col text-xs flex-1">
+                    <div className="flex items-center justify-between">
+                      <span className="font-code-sm text-[11px] text-on-surface-variant font-medium">{log.time}</span>
+                      {log.actorRole && (
+                        <span className="font-code-sm text-[10px] text-outline px-1.5 py-0.2 rounded bg-surface-container">
+                          {log.actorRole}
+                        </span>
+                      )}
+                    </div>
+                    <span className="font-body-sm text-on-surface font-semibold mt-0.5">{log.title}</span>
                     {log.description && (
                       <span className="text-[11px] text-on-surface-variant mt-0.5">{log.description}</span>
                     )}
@@ -470,6 +626,127 @@ export const CaseDetailPage: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* MODAL: Request More Evidence */}
+      {showEvidenceModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs">
+          <div className="w-full max-w-md bg-surface-container-lowest rounded-2xl p-6 shadow-2xl border border-surface-container flex flex-col gap-4 animate-fade-in">
+            <div className="flex items-center gap-2">
+              <span className="material-symbols-outlined text-secondary text-[24px]">attachment</span>
+              <h3 className="font-headline-sm text-lg font-bold text-on-surface">
+                Request Additional Evidence
+              </h3>
+            </div>
+            <p className="text-xs text-on-surface-variant">
+              Specify what official documents or certificates the customer needs to upload before arbitration can proceed:
+            </p>
+            <textarea
+              rows={3}
+              value={evidenceNote}
+              onChange={(e) => setEvidenceNote(e.target.value)}
+              placeholder="e.g. Please provide formal inpatient hospital discharge summary with doctor NMC registration number."
+              className="w-full p-3 rounded-xl bg-surface-container-low border border-surface-container text-xs text-on-surface focus:outline-none focus:border-primary"
+            />
+            <div className="flex items-center justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setShowEvidenceModal(false)}
+                className="px-4 py-2 rounded-full text-xs font-semibold text-on-surface-variant hover:bg-surface-container"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleRequestMoreEvidence}
+                className="px-4 py-2 rounded-full bg-secondary text-on-secondary text-xs font-bold shadow-sm hover:bg-secondary-container"
+              >
+                Send Request
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: File Appeal */}
+      {showAppealModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs">
+          <div className="w-full max-w-md bg-surface-container-lowest rounded-2xl p-6 shadow-2xl border border-surface-container flex flex-col gap-4 animate-fade-in">
+            <div className="flex items-center gap-2">
+              <span className="material-symbols-outlined text-primary text-[24px]">forum</span>
+              <h3 className="font-headline-sm text-lg font-bold text-on-surface">
+                File Passenger Appeal / Note
+              </h3>
+            </div>
+            <p className="text-xs text-on-surface-variant">
+              Provide additional context or dispute grounds to be logged into the permanent audit ledger:
+            </p>
+            <textarea
+              rows={3}
+              value={appealText}
+              onChange={(e) => setAppealText(e.target.value)}
+              placeholder="e.g. Passenger states the alternate flight offered departed 5 hours later, making it unusable for corporate conference."
+              className="w-full p-3 rounded-xl bg-surface-container-low border border-surface-container text-xs text-on-surface focus:outline-none focus:border-primary"
+            />
+            <div className="flex items-center justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setShowAppealModal(false)}
+                className="px-4 py-2 rounded-full text-xs font-semibold text-on-surface-variant hover:bg-surface-container"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleFileAppeal}
+                className="px-4 py-2 rounded-full bg-primary-container text-on-primary-container text-xs font-bold shadow-sm hover:bg-primary-fixed-dim"
+              >
+                Submit Appeal
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: Reject with Reason */}
+      {showRejectModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs">
+          <div className="w-full max-w-md bg-surface-container-lowest rounded-2xl p-6 shadow-2xl border border-surface-container flex flex-col gap-4 animate-fade-in">
+            <div className="flex items-center gap-2">
+              <span className="material-symbols-outlined text-error text-[24px]">block</span>
+              <h3 className="font-headline-sm text-lg font-bold text-on-surface">
+                Reject / Override Recommendation
+              </h3>
+            </div>
+            <p className="text-xs text-on-surface-variant">
+              Mandatory auditor justification required. Explain why the AI recommendation or claim is overridden:
+            </p>
+            <textarea
+              rows={3}
+              value={rejectReason}
+              onChange={(e) => setRejectReason(e.target.value)}
+              placeholder="e.g. Passenger accepted alternate travel voucher directly at airport customer service desk."
+              className="w-full p-3 rounded-xl bg-surface-container-low border border-surface-container text-xs text-on-surface focus:outline-none focus:border-primary"
+            />
+            <div className="flex items-center justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setShowRejectModal(false)}
+                className="px-4 py-2 rounded-full text-xs font-semibold text-on-surface-variant hover:bg-surface-container"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleReject}
+                className="px-4 py-2 rounded-full bg-error text-on-error text-xs font-bold shadow-sm hover:bg-error-container"
+              >
+                Confirm Rejection
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
+export default CaseDetailPage;

@@ -9,7 +9,7 @@ export const BookingsPage: React.FC = () => {
 
   const [bookings] = useState(allMockBookings);
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedMode, setSelectedMode] = useState<'all' | 'flight' | 'train' | 'bus'>('all');
+  const [selectedMode, setSelectedMode] = useState<'all' | 'flight' | 'train' | 'bus' | 'ride'>('all');
   const [statusFilter, setStatusFilter] = useState<'all' | 'disrupted' | 'ontime'>('all');
   const [actionSuccessMsg, setActionSuccessMsg] = useState<string | null>(null);
 
@@ -259,7 +259,19 @@ export const BookingsPage: React.FC = () => {
             type="button"
           >
             <span className="material-symbols-outlined text-[16px]">directions_bus</span>
-            <span>Intercity Buses (122)</span>
+            <span>Intercity Buses</span>
+          </button>
+          <button
+            onClick={() => setSelectedMode('ride')}
+            className={`px-space-md py-1.5 rounded-full font-label-md text-xs font-semibold whitespace-nowrap transition-colors cursor-pointer flex items-center gap-1.5 ${
+              selectedMode === 'ride'
+                ? 'bg-inverse-surface text-inverse-on-surface'
+                : 'bg-surface-container-low hover:bg-surface-container text-on-surface-variant'
+            }`}
+            type="button"
+          >
+            <span className="material-symbols-outlined text-[16px]">local_taxi</span>
+            <span>Rides & Cabs</span>
           </button>
         </div>
 
@@ -317,6 +329,8 @@ export const BookingsPage: React.FC = () => {
                             ? 'train'
                             : item.carrier.type === 'bus'
                             ? 'directions_bus'
+                            : item.carrier.type === 'ride'
+                            ? 'local_taxi'
                             : 'flight'}
                         </span>
                       </span>

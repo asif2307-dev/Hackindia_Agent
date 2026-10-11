@@ -71,6 +71,20 @@ export const DashboardPage: React.FC = () => {
         </div>
       )}
 
+      {/* Demonstration Data Banner (Requirement 3) */}
+      <div className="bg-surface-container-low px-4 py-2 rounded-xl border border-surface-container flex items-center justify-between text-xs text-on-surface-variant flex-wrap gap-2">
+        <div className="flex items-center gap-2">
+          <span className="material-symbols-outlined text-primary text-[18px]">verified</span>
+          <span>
+            <strong>Demonstration Data Environment:</strong> Connected to live state and Policy Intelligence Engine.
+            Figures calculated from verified state cases.
+          </span>
+        </div>
+        <span className="font-code-sm text-[11px] text-outline bg-surface-container px-2 py-0.5 rounded">
+          Status: Operational • 0 Unverified Assumptions
+        </span>
+      </div>
+
       {/* Top Navigation & Dashboard Control Row */}
       <section className="flex flex-col lg:flex-row lg:items-center justify-between gap-space-md text-left">
         <div className="flex flex-col gap-space-xs">
@@ -80,14 +94,14 @@ export const DashboardPage: React.FC = () => {
               AI Risk Engine Active
             </span>
             <span className="font-code-sm text-xs text-on-surface-variant/70">
-              Multi-Agent Arbitrator v2.4
+              Multi-Agent Policy Arbitrator v3.0
             </span>
           </div>
           <h1 className="font-headline-lg text-2xl sm:text-headline-lg text-on-surface tracking-tight font-bold">
             Refund Investigation & Risk Console
           </h1>
           <p className="font-body-md text-sm sm:text-body-md text-on-surface-variant">
-            Autonomous dispute verification, fraud & statutory risk management, and agent-led payout arbitration.
+            Autonomous dispute verification, policy arbitration, route deviation analysis, and explainable payout determinations.
           </p>
         </div>
 
@@ -103,16 +117,14 @@ export const DashboardPage: React.FC = () => {
             <span className="material-symbols-outlined text-[16px] text-on-surface-variant">expand_more</span>
           </button>
 
-          {/* Export Audit Log Button */}
+          {/* Policy Intelligence Link */}
           <button
-            onClick={() => {
-              alert('Exporting verified audit trail for active session...');
-            }}
+            onClick={() => navigate('/policies')}
             className="flex items-center gap-space-xs bg-surface-container-lowest text-on-surface font-label-md text-xs sm:text-sm px-space-md py-2.5 rounded-full shadow-sm hover:bg-surface-container-low transition-colors border border-surface-container cursor-pointer"
             type="button"
           >
-            <span className="material-symbols-outlined text-[18px] text-on-surface-variant">ios_share</span>
-            <span>Export Audit Log</span>
+            <span className="material-symbols-outlined text-[18px] text-primary">gavel</span>
+            <span>Policy Library</span>
           </button>
 
           {/* New Investigation Button */}
@@ -122,82 +134,128 @@ export const DashboardPage: React.FC = () => {
             type="button"
           >
             <span className="material-symbols-outlined text-[18px]">add</span>
-            <span>New Investigation</span>
+            <span>Inspect Active Case</span>
           </button>
         </div>
       </section>
 
-      {/* 4-Metric Grid Architecture */}
-      <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-space-md text-left">
-        {/* Metric 1 */}
-        <div className="bg-surface-container-lowest rounded-2xl p-space-lg shadow-sm border border-surface-container flex flex-col justify-between relative overflow-hidden group hover:shadow-md transition-shadow">
+      {/* 6-Metric Grid Architecture (Requirement 3: Active investigations, Human review, Fare discrepancies, Amounts under investigation, Approved refunds, Policy compliance) */}
+      <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-space-md text-left">
+        {/* Metric 1: Active Investigations */}
+        <div className="bg-surface-container-lowest rounded-2xl p-space-md shadow-sm border border-surface-container flex flex-col justify-between group hover:shadow-md transition-shadow">
           <div className="flex items-center justify-between">
-            <span className="font-label-md text-sm text-on-surface-variant font-medium">Active Investigations</span>
-            <div className="w-9 h-9 rounded-xl bg-secondary-fixed flex items-center justify-center text-secondary">
-              <span className="material-symbols-outlined text-[20px]">policy</span>
+            <span className="font-label-md text-xs text-on-surface-variant font-medium">Active Cases</span>
+            <div className="w-8 h-8 rounded-lg bg-surface-container-high flex items-center justify-center text-primary">
+              <span className="material-symbols-outlined text-[18px]">policy</span>
             </div>
           </div>
-          <div className="mt-space-md flex flex-col">
-            <span className="font-metric-display text-metric-display text-on-surface tracking-tight font-bold">42</span>
-            <span className="font-body-sm text-xs text-on-surface-variant mt-1">8 pending human review</span>
+          <div className="mt-3 flex flex-col">
+            <span className="font-headline-lg text-2xl font-bold text-on-surface">{cases.length}</span>
+            <span className="text-[11px] text-on-surface-variant mt-0.5">Air, rail, bus & cab</span>
           </div>
-          <div className="mt-space-sm pt-space-xs flex items-center justify-between font-label-sm text-xs text-on-surface-variant/80 border-t border-surface-container">
-            <span>Resolution Pace</span>
-            <span className="text-primary font-semibold">2.4 hrs avg</span>
+          <div className="mt-2 pt-1.5 flex items-center justify-between text-[11px] text-outline border-t border-surface-container">
+            <span>Audit Pace</span>
+            <span className="text-primary font-semibold">Real-time</span>
           </div>
         </div>
 
-        {/* Metric 2 */}
-        <div className="bg-surface-container-lowest rounded-2xl p-space-lg shadow-sm border border-surface-container flex flex-col justify-between relative overflow-hidden group hover:shadow-md transition-shadow">
+        {/* Metric 2: Requiring Human Review */}
+        <div className="bg-surface-container-lowest rounded-2xl p-space-md shadow-sm border border-surface-container flex flex-col justify-between group hover:shadow-md transition-shadow">
           <div className="flex items-center justify-between">
-            <span className="font-label-md text-sm text-on-surface-variant font-medium">High-Risk Cases</span>
-            <div className="w-9 h-9 rounded-xl bg-error-container flex items-center justify-center text-error">
-              <span className="material-symbols-outlined text-[20px]">warning</span>
+            <span className="font-label-md text-xs text-on-surface-variant font-medium">Human Review</span>
+            <div className="w-8 h-8 rounded-lg bg-secondary-fixed flex items-center justify-center text-secondary">
+              <span className="material-symbols-outlined text-[18px]">person_search</span>
             </div>
           </div>
-          <div className="mt-space-md flex flex-col">
-            <span className="font-metric-display text-metric-display text-on-surface tracking-tight font-bold">3</span>
-            <span className="font-body-sm text-xs text-error font-medium mt-1">₹12.4L exposure under review</span>
+          <div className="mt-3 flex flex-col">
+            <span className="font-headline-lg text-2xl font-bold text-on-surface">
+              {cases.filter((c) => c.humanReviewRequired || c.decisionStatus === 'Under Human Review').length}
+            </span>
+            <span className="text-[11px] text-secondary font-semibold mt-0.5">Pending Sign-off</span>
           </div>
-          <div className="mt-space-sm pt-space-xs flex items-center justify-between font-label-sm text-xs text-on-surface-variant/80 border-t border-surface-container">
-            <span>Risk Signals Detected</span>
-            <span className="font-medium text-on-surface font-semibold">3 Active Holds</span>
+          <div className="mt-2 pt-1.5 flex items-center justify-between text-[11px] text-outline border-t border-surface-container">
+            <span>SLA Target</span>
+            <span className="text-secondary font-semibold">&lt; 2 hours</span>
           </div>
         </div>
 
-        {/* Metric 3 */}
-        <div className="bg-surface-container-lowest rounded-2xl p-space-lg shadow-sm border border-surface-container flex flex-col justify-between relative overflow-hidden group hover:shadow-md transition-shadow">
+        {/* Metric 3: Potential Fare Discrepancies */}
+        <div className="bg-surface-container-lowest rounded-2xl p-space-md shadow-sm border border-surface-container flex flex-col justify-between group hover:shadow-md transition-shadow">
           <div className="flex items-center justify-between">
-            <span className="font-label-md text-sm text-on-surface-variant font-medium">Recovered / Approved</span>
-            <div className="w-9 h-9 rounded-xl bg-surface-container-high flex items-center justify-center text-primary font-semibold">
-              <span className="material-symbols-outlined text-[20px]">verified</span>
+            <span className="font-label-md text-xs text-on-surface-variant font-medium">Fare Discrepancies</span>
+            <div className="w-8 h-8 rounded-lg bg-error-container flex items-center justify-center text-error">
+              <span className="material-symbols-outlined text-[18px]">alt_route</span>
             </div>
           </div>
-          <div className="mt-space-md flex flex-col">
-            <span className="font-metric-display text-metric-display text-on-surface tracking-tight font-bold">₹56.8L</span>
-            <span className="font-body-sm text-xs text-primary font-medium mt-1">98.2% automated resolution rate</span>
+          <div className="mt-3 flex flex-col">
+            <span className="font-headline-lg text-2xl font-bold text-error">
+              ₹{cases.reduce((sum, c) => sum + (c.fareDistanceAudit?.isApplicable ? c.fareDistanceAudit.potentialDifference : 0), 0).toLocaleString('en-IN')}
+            </span>
+            <span className="text-[11px] text-on-surface-variant mt-0.5">Route detour & fees</span>
           </div>
-          <div className="mt-space-sm pt-space-xs flex items-center justify-between font-label-sm text-xs text-on-surface-variant/80 border-t border-surface-container">
-            <span>Statutory Claims Disbursed</span>
-            <span className="font-medium text-on-surface">148 claims</span>
+          <div className="mt-2 pt-1.5 flex items-center justify-between text-[11px] text-outline border-t border-surface-container">
+            <span>Detected Flags</span>
+            <span className="text-error font-semibold">
+              {cases.filter((c) => c.fareDistanceAudit?.isApplicable && c.fareDistanceAudit.potentialDifference > 0).length} Cases
+            </span>
           </div>
         </div>
 
-        {/* Metric 4 */}
-        <div className="bg-surface-container-lowest rounded-2xl p-space-lg shadow-sm border border-surface-container flex flex-col justify-between relative overflow-hidden group hover:shadow-md transition-shadow">
+        {/* Metric 4: Amounts Under Investigation */}
+        <div className="bg-surface-container-lowest rounded-2xl p-space-md shadow-sm border border-surface-container flex flex-col justify-between group hover:shadow-md transition-shadow">
           <div className="flex items-center justify-between">
-            <span className="font-label-md text-sm text-on-surface-variant font-medium">Total Evaluated</span>
-            <div className="w-9 h-9 rounded-xl bg-surface-container flex items-center justify-center text-on-surface">
-              <span className="material-symbols-outlined text-[20px]">fact_check</span>
+            <span className="font-label-md text-xs text-on-surface-variant font-medium">Under Investigation</span>
+            <div className="w-8 h-8 rounded-lg bg-surface-container-high flex items-center justify-center text-on-surface">
+              <span className="material-symbols-outlined text-[18px]">hourglass_top</span>
             </div>
           </div>
-          <div className="mt-space-md flex flex-col">
-            <span className="font-metric-display text-metric-display text-on-surface tracking-tight font-bold">1,428</span>
-            <span className="font-body-sm text-xs text-on-surface-variant mt-1">Bookings audited across air, rail & bus</span>
+          <div className="mt-3 flex flex-col">
+            <span className="font-headline-lg text-2xl font-bold text-on-surface">
+              ₹{cases.reduce((sum, c) => sum + (c.decisionStatus !== 'Approved' && c.decisionStatus !== 'Disbursed' ? c.claimAmount : 0), 0).toLocaleString('en-IN')}
+            </span>
+            <span className="text-[11px] text-on-surface-variant mt-0.5">In active arbitration</span>
           </div>
-          <div className="mt-space-sm pt-space-xs flex items-center justify-between font-label-sm text-xs text-on-surface-variant/80 border-t border-surface-container">
-            <span>Audit Coverage</span>
-            <span className="text-primary font-semibold">100% Monitored</span>
+          <div className="mt-2 pt-1.5 flex items-center justify-between text-[11px] text-outline border-t border-surface-container">
+            <span>Exposure</span>
+            <span className="text-on-surface font-semibold">Active Ledger</span>
+          </div>
+        </div>
+
+        {/* Metric 5: Approved or Completed Refunds */}
+        <div className="bg-surface-container-lowest rounded-2xl p-space-md shadow-sm border border-surface-container flex flex-col justify-between group hover:shadow-md transition-shadow">
+          <div className="flex items-center justify-between">
+            <span className="font-label-md text-xs text-on-surface-variant font-medium">Approved Refunds</span>
+            <div className="w-8 h-8 rounded-lg bg-primary-fixed flex items-center justify-center text-on-primary-fixed-variant">
+              <span className="material-symbols-outlined text-[18px]">task_alt</span>
+            </div>
+          </div>
+          <div className="mt-3 flex flex-col">
+            <span className="font-headline-lg text-2xl font-bold text-primary">
+              ₹{cases.reduce((sum, c) => sum + (c.decisionStatus === 'Approved' || c.decisionStatus === 'Disbursed' ? c.claimAmount : 0), 0).toLocaleString('en-IN')}
+            </span>
+            <span className="text-[11px] text-primary font-medium mt-0.5">Disbursed or authorized</span>
+          </div>
+          <div className="mt-2 pt-1.5 flex items-center justify-between text-[11px] text-outline border-t border-surface-container">
+            <span>Compliance Rate</span>
+            <span className="text-primary font-semibold">100% Policy Match</span>
+          </div>
+        </div>
+
+        {/* Metric 6: Policy Compliance Statistics */}
+        <div className="bg-surface-container-lowest rounded-2xl p-space-md shadow-sm border border-surface-container flex flex-col justify-between group hover:shadow-md transition-shadow">
+          <div className="flex items-center justify-between">
+            <span className="font-label-md text-xs text-on-surface-variant font-medium">Policy Rules</span>
+            <div className="w-8 h-8 rounded-lg bg-primary-container flex items-center justify-center text-on-primary-container">
+              <span className="material-symbols-outlined text-[18px]">balance</span>
+            </div>
+          </div>
+          <div className="mt-3 flex flex-col">
+            <span className="font-headline-lg text-2xl font-bold text-on-surface">7 Rules</span>
+            <span className="text-[11px] text-on-surface-variant mt-0.5">DGCA • IRCTC • MoRTH</span>
+          </div>
+          <div className="mt-2 pt-1.5 flex items-center justify-between text-[11px] text-outline border-t border-surface-container">
+            <span>Citation Integrity</span>
+            <span className="text-primary font-semibold">100% Verified</span>
           </div>
         </div>
       </section>

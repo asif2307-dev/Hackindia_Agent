@@ -165,22 +165,22 @@ export const HumanReviewPage: React.FC = () => {
           <div className="flex flex-col col-span-2 sm:col-span-1">
             <span className="font-label-sm text-[11px] uppercase tracking-wider text-outline">Trip Sector</span>
             <div className="flex items-center gap-1 mt-0.5">
-              <span className="font-label-md text-xs sm:text-sm text-on-surface font-bold">DEL</span>
-              <span className="material-symbols-outlined text-[14px] text-outline">flight_takeoff</span>
-              <span className="font-label-md text-xs sm:text-sm text-on-surface font-bold">BOM</span>
+              <span className="font-label-md text-xs sm:text-sm text-on-surface font-bold truncate">
+                {selectedCase.carrier.route}
+              </span>
             </div>
             <span className="font-code-sm text-[11px] text-secondary font-medium truncate">
-              {selectedCase.carrier.code} • Economy (M)
+              {selectedCase.carrier.code} • {selectedCase.carrier.name}
             </span>
           </div>
 
           {/* Journey Date */}
           <div className="flex flex-col col-span-2 sm:col-span-1">
-            <span className="font-label-sm text-[11px] uppercase tracking-wider text-outline">Flight Date</span>
+            <span className="font-label-sm text-[11px] uppercase tracking-wider text-outline">Travel Date</span>
             <span className="font-label-md text-xs sm:text-sm text-on-surface font-semibold mt-0.5">
               {selectedCase.journeyDate}
             </span>
-            <span className="font-body-sm text-xs text-tertiary">Scheduled 07:15 IST</span>
+            <span className="font-body-sm text-xs text-tertiary">Verified Scheduled</span>
           </div>
 
           {/* Amount */}

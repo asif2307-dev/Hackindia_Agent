@@ -225,7 +225,7 @@ export const RefundInvestigationsPage: React.FC = () => {
             }`}
             type="button"
           >
-            All (42)
+            All ({cases.length})
           </button>
           <button
             onClick={() => setActiveTab('approved')}
@@ -236,7 +236,7 @@ export const RefundInvestigationsPage: React.FC = () => {
             }`}
             type="button"
           >
-            Approved & Disbursed (28)
+            Approved & Disbursed ({cases.filter((c) => c.decisionStatus === 'Approved' || c.decisionStatus === 'Disbursed').length})
           </button>
           <button
             onClick={() => setActiveTab('review')}
@@ -247,7 +247,7 @@ export const RefundInvestigationsPage: React.FC = () => {
             }`}
             type="button"
           >
-            Under Human Review (6)
+            Under Human Review ({cases.filter((c) => c.decisionStatus === 'Under Human Review' || c.decisionStatus === 'Pending Human Approval').length})
           </button>
           <button
             onClick={() => setActiveTab('awaiting')}
@@ -258,7 +258,7 @@ export const RefundInvestigationsPage: React.FC = () => {
             }`}
             type="button"
           >
-            Awaiting Carrier Evidence (5)
+            Awaiting Carrier Evidence ({cases.filter((c) => c.decisionStatus === 'Awaiting Carrier Evidence').length})
           </button>
           <button
             onClick={() => setActiveTab('flagged')}
@@ -269,7 +269,7 @@ export const RefundInvestigationsPage: React.FC = () => {
             }`}
             type="button"
           >
-            Flagged / Rejected (3)
+            Flagged / Rejected ({cases.filter((c) => c.decisionStatus === 'Flagged' || c.decisionStatus === 'Rejected').length})
           </button>
         </div>
 
@@ -332,6 +332,8 @@ export const RefundInvestigationsPage: React.FC = () => {
                             ? 'train'
                             : item.carrier.type === 'bus'
                             ? 'directions_bus'
+                            : item.carrier.type === 'ride'
+                            ? 'local_taxi'
                             : 'flight'}
                         </span>
                       </span>

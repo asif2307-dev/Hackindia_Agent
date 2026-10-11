@@ -28,6 +28,12 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen = false, onClose }) => 
       indicator: true,
     },
     {
+      name: 'Policy Intelligence',
+      path: '/policies',
+      icon: 'gavel',
+      indicator: true,
+    },
+    {
       name: 'Reviews',
       path: '/reviews',
       icon: 'rate_review',

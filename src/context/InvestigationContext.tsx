@@ -11,7 +11,10 @@ interface InvestigationContextType {
   selectCaseById: (id: string) => void;
   approveRefund: (id: string, comment?: string) => void;
   requestManualReview: (id: string, comment?: string) => void;
+  requestMoreEvidence: (id: string, comment?: string) => void;
   rejectRecommendation: (id: string, reason: string) => void;
+  updateToleranceRule: (caseId: string, newTolerancePct: number) => void;
+  fileAppeal: (caseId: string, appealText: string) => void;
   updateSettings: (newSettings: Partial<SystemSettings>) => void;
   isSearchModalOpen: boolean;
   setIsSearchModalOpen: (open: boolean) => void;
@@ -44,7 +47,7 @@ export const InvestigationProvider: React.FC<{ children: React.ReactNode }> = ({
             ...c,
             decisionStatus: 'Approved',
             finalDecision: 'Approved by Lead Auditor Julian Hayes',
-            reviewerComment: comment || 'Refund authorized following full evidence verification.',
+            reviewerComment: comment || 'Refund authorized following full evidence & policy verification.',
             auditLog: [
               {
                 id: `log-${Date.now()}`,
@@ -52,6 +55,7 @@ export const InvestigationProvider: React.FC<{ children: React.ReactNode }> = ({
                 title: `Refund Authorized: ${c.claimAmountFormatted}`,
                 description: `Signed off by Julian Hayes. Ledger record #REF-APPROVED-${id} emitted.`,
                 dotColor: 'bg-primary-container',
+                actorRole: 'Lead Auditor',
               },
               ...c.auditLog,
             ],
@@ -71,14 +75,44 @@ export const InvestigationProvider: React.FC<{ children: React.ReactNode }> = ({
             ...c,
             decisionStatus: 'Under Human Review',
             finalDecision: 'Escalated to 2nd-Level Carrier Review Desk',
-            reviewerComment: comment || 'Dispatched for manual airline carrier liaison verification.',
+            reviewerComment: comment || 'Dispatched for manual airline/operator liaison verification.',
             auditLog: [
               {
                 id: `log-${Date.now()}`,
                 time: now,
                 title: 'Case Escalated to Carrier Review Desk',
-                description: 'Flagged for manual investigation of carrier liaison records.',
+                description: comment || 'Flagged for manual investigation of carrier liaison records.',
                 dotColor: 'bg-secondary',
+                actorRole: 'Auditor Desk',
+              },
+              ...c.auditLog,
+            ],
+          };
+        }
+        return c;
+      })
+    );
+  };
+
+  const requestMoreEvidence = (id: string, comment?: string) => {
+    setCases((prev) =>
+      prev.map((c) => {
+        if (c.id === id) {
+          const now = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+          return {
+            ...c,
+            decisionStatus: 'Under Human Review',
+            outcome: 'More Evidence Required',
+            finalDecision: 'More Evidence Requested from Passenger',
+            reviewerComment: comment || 'Passenger notified to submit authenticated hospital or operator certificates.',
+            auditLog: [
+              {
+                id: `log-${Date.now()}`,
+                time: now,
+                title: 'Evidence Request Dispatched to Passenger',
+                description: comment || 'Awaiting certified supporting documents before determination.',
+                dotColor: 'bg-secondary',
+                actorRole: 'Claims Officer',
               },
               ...c.auditLog,
             ],
@@ -97,15 +131,79 @@ export const InvestigationProvider: React.FC<{ children: React.ReactNode }> = ({
           return {
             ...c,
             decisionStatus: 'Rejected',
-            finalDecision: 'Recommendation Rejected by Auditor',
+            finalDecision: 'Recommendation Overridden / Claim Rejected',
             reviewerComment: reason,
             auditLog: [
               {
                 id: `log-${Date.now()}`,
                 time: now,
-                title: 'AI Recommendation Overridden / Rejected',
+                title: 'AI Recommendation Overridden / Claim Rejected',
                 description: `Reason: ${reason}`,
                 dotColor: 'bg-error',
+                actorRole: 'Lead Auditor',
+              },
+              ...c.auditLog,
+            ],
+          };
+        }
+        return c;
+      })
+    );
+  };
+
+  const updateToleranceRule = (caseId: string, newTolerancePct: number) => {
+    setCases((prev) =>
+      prev.map((c) => {
+        if (c.id === caseId && c.fareDistanceAudit?.isApplicable) {
+          const audit = c.fareDistanceAudit;
+          const deviationPct = audit.distanceDeviationPct;
+          const toleranceExceeded = deviationPct > newTolerancePct;
+          const eligibleAdjustment = toleranceExceeded ? audit.potentialDifference : 0;
+          const now = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+          return {
+            ...c,
+            fareDistanceAudit: {
+              ...audit,
+              tolerancePct: newTolerancePct,
+              toleranceExceeded,
+              eligibleAdjustment,
+            },
+            auditLog: [
+              {
+                id: `log-${Date.now()}`,
+                time: now,
+                title: `Tolerance Threshold Updated to ${newTolerancePct}%`,
+                description: `Fare recalculation updated. Exceeded: ${toleranceExceeded ? 'YES' : 'NO'}. Eligible: ₹${eligibleAdjustment}.`,
+                dotColor: 'bg-secondary',
+                actorRole: 'Auditor Policy Setting',
+              },
+              ...c.auditLog,
+            ],
+          };
+        }
+        return c;
+      })
+    );
+  };
+
+  const fileAppeal = (caseId: string, appealText: string) => {
+    setCases((prev) =>
+      prev.map((c) => {
+        if (c.id === caseId) {
+          const now = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+          return {
+            ...c,
+            decisionStatus: 'Under Human Review',
+            appealNotes: appealText,
+            auditLog: [
+              {
+                id: `log-${Date.now()}`,
+                time: now,
+                title: 'Passenger Appeal Submitted',
+                description: `Appeal note: "${appealText}"`,
+                dotColor: 'bg-primary-container',
+                actorRole: 'Passenger Appeal Portal',
               },
               ...c.auditLog,
             ],
@@ -134,7 +232,10 @@ export const InvestigationProvider: React.FC<{ children: React.ReactNode }> = ({
         selectCaseById,
         approveRefund,
         requestManualReview,
+        requestMoreEvidence,
         rejectRecommendation,
+        updateToleranceRule,
+        fileAppeal,
         updateSettings,
         isSearchModalOpen,
         setIsSearchModalOpen,

@@ -8,6 +8,7 @@ import { DashboardPage } from './pages/DashboardPage';
 import { BookingsPage } from './pages/BookingsPage';
 import { RefundInvestigationsPage } from './pages/RefundInvestigationsPage';
 import { CaseDetailPage } from './pages/CaseDetailPage';
+import { PolicyIntelligencePage } from './pages/PolicyIntelligencePage';
 import { HumanReviewPage } from './pages/HumanReviewPage';
 import { AnalyticsPage } from './pages/AnalyticsPage';
 import { SettingsPage } from './pages/SettingsPage';
@@ -28,6 +29,8 @@ export const App: React.FC = () => {
             <Route path="/bookings" element={<BookingsPage />} />
             <Route path="/refund-investigations" element={<RefundInvestigationsPage />} />
             <Route path="/refund-investigations/:id" element={<CaseDetailPage />} />
+            <Route path="/policies" element={<PolicyIntelligencePage />} />
+            <Route path="/policy-intelligence" element={<PolicyIntelligencePage />} />
             <Route path="/reviews" element={<HumanReviewPage />} />
             <Route path="/analytics" element={<AnalyticsPage />} />
             <Route path="/settings" element={<SettingsPage />} />
