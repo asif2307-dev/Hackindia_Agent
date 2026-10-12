@@ -1,12 +1,13 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useInvestigation } from '../../context/InvestigationContext';
-import { LanguageSelector } from '../common/LanguageSelector';
 
 interface TopBarProps {
   onMenuClick: () => void;
 }
 
 export const TopBar: React.FC<TopBarProps> = ({ onMenuClick }) => {
+  const navigate = useNavigate();
   const { searchQuery, setSearchQuery, setIsSearchModalOpen } = useInvestigation();
   const [showNotifications, setShowNotifications] = useState(false);
   const notificationRef = useRef<HTMLDivElement>(null);
@@ -42,46 +43,57 @@ export const TopBar: React.FC<TopBarProps> = ({ onMenuClick }) => {
   }, [showNotifications]);
 
   return (
-    <header className="fixed top-0 left-0 lg:left-64 right-0 h-16 bg-surface/90 backdrop-blur-xl shadow-[0_1px_8px_rgba(0,0,0,0.04)] z-40 flex items-center justify-between px-space-md lg:px-space-xl border-b border-surface-container-high/60">
-      <div className="flex items-center gap-space-sm flex-1 max-w-xl">
+    <header className="sticky top-0 z-20 h-16 bg-white/95 backdrop-blur-md shadow-[0_1px_4px_rgba(0,0,0,0.03)] border-b border-[#006D77]/10 flex items-center justify-between px-4 sm:px-6 lg:px-8">
+      <div className="flex items-center gap-2.5 sm:gap-3 flex-1 max-w-xl">
         {/* Mobile Hamburger */}
         <button
           type="button"
           onClick={onMenuClick}
-          className="lg:hidden p-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors"
-          aria-label="Open menu"
+          className="lg:hidden p-1.5 rounded-lg text-gray-700 hover:bg-[#006D77]/10 hover:text-[#006D77] transition-colors"
+          aria-label="Open audit menu"
         >
-          <span className="material-symbols-outlined text-[24px]">menu</span>
+          <span className="material-symbols-outlined text-[22px]">menu</span>
+        </button>
+
+        {/* Back to Home Button */}
+        <button
+          type="button"
+          onClick={() => navigate('/')}
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold text-[#17324D] hover:text-[#006D77] bg-[#f0f5f7] hover:bg-[#EAF8F7] border border-[#006D77]/15 hover:border-[#20B8B0]/40 transition-colors cursor-pointer shrink-0 shadow-2xs"
+          title="Back to Agent Travel Homepage"
+        >
+          <span className="material-symbols-outlined text-[16px] text-[#006D77]">arrow_back</span>
+          <span className="hidden sm:inline">Back to Home</span>
         </button>
 
         {/* Global Search Pill */}
         <div
           onClick={() => setIsSearchModalOpen(true)}
-          className="flex items-center gap-space-xs w-full bg-surface-container-lowest rounded-full px-space-md py-1.5 shadow-sm border border-surface-container hover:border-outline-variant transition-all cursor-pointer group"
+          className="flex items-center gap-space-xs w-full bg-[#f0f5f7] hover:bg-[#e7eff2] rounded-full px-3.5 py-1.5 border border-[#006D77]/15 hover:border-[#006D77]/40 transition-all cursor-pointer group shadow-xs"
         >
-          <span className="material-symbols-outlined text-on-surface-variant text-[20px] group-hover:text-primary transition-colors">
+          <span className="material-symbols-outlined text-[#006D77] text-[19px] group-hover:scale-105 transition-transform">
             search
           </span>
           <input
-            className="bg-transparent w-full text-on-surface placeholder:text-on-surface-variant/70 focus:outline-none font-body-sm text-body-sm cursor-pointer"
+            className="bg-transparent w-full text-[#0d283e] placeholder:text-gray-500 focus:outline-none text-xs sm:text-sm font-medium cursor-pointer"
             placeholder="Search bookings, PNR, carrier, or refund ID..."
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             readOnly
           />
-          <div className="hidden sm:flex px-2 py-0.5 rounded-full bg-surface-container-low text-on-surface-variant font-code-sm text-code-sm uppercase border border-surface-container-high shrink-0">
+          <div className="hidden sm:flex px-2 py-0.5 rounded-full bg-white text-gray-600 font-mono text-[10px] uppercase border border-gray-200 shrink-0 font-bold">
             ⌘K
           </div>
         </div>
       </div>
 
-      <div className="flex items-center gap-space-sm lg:gap-space-lg">
+      <div className="flex items-center gap-space-sm lg:gap-space-md">
         {/* Notifications Button & Dropdown Container */}
         <div ref={notificationRef} className="relative">
           <button
             onClick={() => setShowNotifications((prev) => !prev)}
-            className="relative p-2 rounded-full text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors cursor-pointer"
+            className="relative p-2 rounded-full text-gray-700 hover:text-[#006D77] hover:bg-[#006D77]/10 transition-colors cursor-pointer"
             type="button"
             title="Notifications"
             aria-expanded={showNotifications}
@@ -89,45 +101,45 @@ export const TopBar: React.FC<TopBarProps> = ({ onMenuClick }) => {
             aria-label="Toggle notifications panel"
           >
             <span className="material-symbols-outlined text-[22px]">notifications</span>
-            <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-primary-container ring-2 ring-surface-container-lowest"></span>
+            <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-[#E8B86D] ring-2 ring-white"></span>
           </button>
 
           {/* Notifications Dropdown */}
           {showNotifications && (
             <div
-              className="absolute right-0 mt-2 w-80 sm:w-96 rounded-2xl bg-surface-container-lowest shadow-xl border border-surface-container-high p-space-md z-50 animate-fade-in"
+              className="absolute right-0 mt-2 w-80 sm:w-96 rounded-2xl bg-white shadow-2xl border border-[#006D77]/20 p-space-md z-50 animate-fade-in"
               role="region"
               aria-label="Auditor Alerts"
             >
-              <div className="flex items-center justify-between pb-2 border-b border-surface-container mb-3">
-                <span className="font-headline-sm text-[15px] font-bold text-on-surface">Auditor Alerts</span>
-                <span className="px-2 py-0.5 rounded-full bg-primary-container/20 text-on-primary-container font-label-sm text-[11px] font-bold">
+              <div className="flex items-center justify-between pb-2 border-b border-gray-100 mb-3">
+                <span className="font-headline-sm text-[15px] font-bold text-[#0d283e]">Auditor Alerts</span>
+                <span className="px-2 py-0.5 rounded-full bg-[#006D77]/10 text-[#006D77] text-[11px] font-bold">
                   2 Pending
                 </span>
               </div>
               <div className="flex flex-col gap-2.5">
-                <div className="p-2.5 rounded-xl bg-surface-container-low hover:bg-surface-container transition-colors flex items-start gap-2.5">
-                  <span className="w-2 h-2 rounded-full bg-error mt-1.5 shrink-0"></span>
+                <div className="p-2.5 rounded-xl bg-gray-50 hover:bg-[#006D77]/5 transition-colors flex items-start gap-2.5 border border-transparent hover:border-[#006D77]/20">
+                  <span className="w-2 h-2 rounded-full bg-red-500 mt-1.5 shrink-0"></span>
                   <div className="flex flex-col">
-                    <span className="font-label-md text-xs font-semibold text-on-surface">
+                    <span className="text-xs font-bold text-[#0d283e]">
                       High-Risk Investigation #RF-1042 Flagged
                     </span>
-                    <span className="text-[11px] text-on-surface-variant mt-0.5">
+                    <span className="text-[11px] text-gray-600 mt-0.5">
                       Conflicting carrier logs require senior auditor authorization.
                     </span>
-                    <span className="text-[10px] text-outline font-code-sm mt-1">12 mins ago</span>
+                    <span className="text-[10px] text-gray-400 font-mono mt-1">12 mins ago</span>
                   </div>
                 </div>
-                <div className="p-2.5 rounded-xl bg-surface-container-low hover:bg-surface-container transition-colors flex items-start gap-2.5">
-                  <span className="w-2 h-2 rounded-full bg-primary-container mt-1.5 shrink-0"></span>
+                <div className="p-2.5 rounded-xl bg-gray-50 hover:bg-[#006D77]/5 transition-colors flex items-start gap-2.5 border border-transparent hover:border-[#006D77]/20">
+                  <span className="w-2 h-2 rounded-full bg-[#006D77] mt-1.5 shrink-0"></span>
                   <div className="flex flex-col">
-                    <span className="font-label-md text-xs font-semibold text-on-surface">
+                    <span className="text-xs font-bold text-[#0d283e]">
                       Case #AT-9842 Ready for Authorization
                     </span>
-                    <span className="text-[11px] text-on-surface-variant mt-0.5">
+                    <span className="text-[11px] text-gray-600 mt-0.5">
                       Full refund of ₹9,450 recommended under DGCA policy.
                     </span>
-                    <span className="text-[10px] text-outline font-code-sm mt-1">28 mins ago</span>
+                    <span className="text-[10px] text-gray-400 font-mono mt-1">28 mins ago</span>
                   </div>
                 </div>
               </div>
@@ -135,21 +147,16 @@ export const TopBar: React.FC<TopBarProps> = ({ onMenuClick }) => {
           )}
         </div>
 
-        {/* Language Selector */}
-        <div className="hidden sm:inline-flex">
-          <LanguageSelector variant="header" />
-        </div>
-
         {/* User Profile */}
-        <div className="flex items-center gap-space-sm pl-space-xs border-l border-surface-container-high/60">
-          <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center shrink-0 shadow-xs">
-            <span className="material-symbols-outlined text-on-primary text-[18px]">person</span>
+        <div className="flex items-center gap-2 pl-space-xs border-l border-gray-200">
+          <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-[#006D77] to-[#20B8B0] flex items-center justify-center text-white shrink-0 shadow-xs">
+            <span className="material-symbols-outlined text-white text-[18px]">person</span>
           </div>
           <div className="hidden sm:flex flex-col text-left">
-            <span className="font-label-md text-label-md font-semibold text-on-surface leading-tight">
+            <span className="text-xs font-bold text-[#0d283e] leading-tight">
               Julian Hayes
             </span>
-            <span className="font-label-sm text-label-sm text-on-surface-variant leading-tight">
+            <span className="text-[10px] font-semibold text-[#006D77] leading-tight">
               Lead Auditor
             </span>
           </div>

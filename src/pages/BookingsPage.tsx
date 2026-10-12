@@ -56,18 +56,18 @@ export const BookingsPage: React.FC = () => {
       <section className="flex flex-col lg:flex-row lg:items-center justify-between gap-space-md">
         <div className="flex flex-col gap-space-xs">
           <div className="flex items-center gap-space-xs flex-wrap">
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-surface-container-high text-on-surface-variant font-label-sm text-xs">
-              <span className="w-1.5 h-1.5 rounded-full bg-primary-container animate-pulse"></span>
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#20B8B0]/15 text-[#006D77] border border-[#20B8B0]/30 font-label-sm text-xs font-bold">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#20B8B0] animate-pulse"></span>
               Live Telemetry Tracking
             </span>
-            <span className="font-code-sm text-xs text-on-surface-variant/70">
+            <span className="font-code-sm text-xs text-gray-500 font-medium">
               1,428 Active Itineraries
             </span>
           </div>
-          <h1 className="font-headline-lg text-2xl sm:text-headline-lg text-on-surface tracking-tight font-bold">
+          <h1 className="font-headline-lg text-2xl sm:text-3xl text-[#0d283e] tracking-tight font-extrabold font-['Plus_Jakarta_Sans']">
             Travel Bookings Ledger
           </h1>
-          <p className="font-body-md text-sm sm:text-body-md text-on-surface-variant">
+          <p className="font-body-md text-sm sm:text-body-md text-gray-600">
             Continuous GDS monitoring for cancellations, delays, and schedule alterations across flights, trains, and buses.
           </p>
         </div>
@@ -75,25 +75,25 @@ export const BookingsPage: React.FC = () => {
         <div className="flex items-center flex-wrap gap-space-sm">
           <button
             onClick={handleScanGDS}
-            className="flex items-center gap-space-xs bg-surface-container-lowest text-on-surface font-label-md text-xs sm:text-sm px-space-md py-2.5 rounded-full shadow-sm hover:bg-surface-container-low transition-colors border border-surface-container cursor-pointer"
+            className="flex items-center gap-space-xs bg-white text-[#0d283e] font-label-md text-xs sm:text-sm font-semibold px-space-md py-2.5 rounded-full shadow-xs hover:bg-[#f0f5f7] transition-all border border-[#006D77]/20 cursor-pointer"
             type="button"
           >
-            <span className="material-symbols-outlined text-[18px] text-primary">sync</span>
+            <span className="material-symbols-outlined text-[18px] text-[#006D77]">sync</span>
             <span>Scan Carrier GDS</span>
           </button>
 
           <button
             onClick={() => alert('Exporting bookings ledger CSV/Excel...')}
-            className="flex items-center gap-space-xs bg-surface-container-lowest text-on-surface font-label-md text-xs sm:text-sm px-space-md py-2.5 rounded-full shadow-sm hover:bg-surface-container-low transition-colors border border-surface-container cursor-pointer"
+            className="flex items-center gap-space-xs bg-white text-[#0d283e] font-label-md text-xs sm:text-sm font-semibold px-space-md py-2.5 rounded-full shadow-xs hover:bg-[#f0f5f7] transition-all border border-[#006D77]/20 cursor-pointer"
             type="button"
           >
-            <span className="material-symbols-outlined text-[18px] text-on-surface-variant">ios_share</span>
+            <span className="material-symbols-outlined text-[18px] text-gray-600">ios_share</span>
             <span>Export Bookings</span>
           </button>
 
           <button
             onClick={() => navigate('/refund-investigations/AT-9842')}
-            className="flex items-center gap-space-xs bg-primary-container text-on-primary-container font-label-md text-xs sm:text-sm font-bold px-space-lg py-2.5 rounded-full shadow-sm hover:shadow-md hover:bg-primary-fixed-dim transition-all cursor-pointer"
+            className="flex items-center gap-space-xs bg-gradient-to-r from-[#006D77] to-[#20B8B0] hover:from-[#005a63] hover:to-[#1aa39b] text-white font-label-md text-xs sm:text-sm font-bold px-space-lg py-2.5 rounded-full shadow-md hover:shadow-lg transition-all cursor-pointer"
             type="button"
           >
             <span className="material-symbols-outlined text-[18px]">add</span>
@@ -216,10 +216,10 @@ export const BookingsPage: React.FC = () => {
         <div className="flex items-center gap-space-xs overflow-x-auto pb-space-xs">
           <button
             onClick={() => setSelectedMode('all')}
-            className={`px-space-md py-1.5 rounded-full font-label-md text-xs font-semibold whitespace-nowrap transition-colors cursor-pointer ${
+            className={`px-4 py-1.5 rounded-full font-label-md text-xs font-bold whitespace-nowrap transition-all cursor-pointer ${
               selectedMode === 'all'
-                ? 'bg-inverse-surface text-inverse-on-surface'
-                : 'bg-surface-container-low hover:bg-surface-container text-on-surface-variant'
+                ? 'bg-gradient-to-r from-[#006D77] to-[#20B8B0] text-white shadow-xs'
+                : 'bg-[#f0f5f7] hover:bg-[#e7eff2] text-[#0d283e]'
             }`}
             type="button"
           >
@@ -227,10 +227,10 @@ export const BookingsPage: React.FC = () => {
           </button>
           <button
             onClick={() => setSelectedMode('flight')}
-            className={`px-space-md py-1.5 rounded-full font-label-md text-xs font-semibold whitespace-nowrap transition-colors cursor-pointer flex items-center gap-1.5 ${
+            className={`px-4 py-1.5 rounded-full font-label-md text-xs font-bold whitespace-nowrap transition-all cursor-pointer flex items-center gap-1.5 ${
               selectedMode === 'flight'
-                ? 'bg-inverse-surface text-inverse-on-surface'
-                : 'bg-surface-container-low hover:bg-surface-container text-on-surface-variant'
+                ? 'bg-gradient-to-r from-[#006D77] to-[#20B8B0] text-white shadow-xs'
+                : 'bg-[#f0f5f7] hover:bg-[#e7eff2] text-[#0d283e]'
             }`}
             type="button"
           >
@@ -239,10 +239,10 @@ export const BookingsPage: React.FC = () => {
           </button>
           <button
             onClick={() => setSelectedMode('train')}
-            className={`px-space-md py-1.5 rounded-full font-label-md text-xs font-semibold whitespace-nowrap transition-colors cursor-pointer flex items-center gap-1.5 ${
+            className={`px-4 py-1.5 rounded-full font-label-md text-xs font-bold whitespace-nowrap transition-all cursor-pointer flex items-center gap-1.5 ${
               selectedMode === 'train'
-                ? 'bg-inverse-surface text-inverse-on-surface'
-                : 'bg-surface-container-low hover:bg-surface-container text-on-surface-variant'
+                ? 'bg-gradient-to-r from-[#006D77] to-[#20B8B0] text-white shadow-xs'
+                : 'bg-[#f0f5f7] hover:bg-[#e7eff2] text-[#0d283e]'
             }`}
             type="button"
           >
@@ -251,10 +251,10 @@ export const BookingsPage: React.FC = () => {
           </button>
           <button
             onClick={() => setSelectedMode('bus')}
-            className={`px-space-md py-1.5 rounded-full font-label-md text-xs font-semibold whitespace-nowrap transition-colors cursor-pointer flex items-center gap-1.5 ${
+            className={`px-4 py-1.5 rounded-full font-label-md text-xs font-bold whitespace-nowrap transition-all cursor-pointer flex items-center gap-1.5 ${
               selectedMode === 'bus'
-                ? 'bg-inverse-surface text-inverse-on-surface'
-                : 'bg-surface-container-low hover:bg-surface-container text-on-surface-variant'
+                ? 'bg-gradient-to-r from-[#006D77] to-[#20B8B0] text-white shadow-xs'
+                : 'bg-[#f0f5f7] hover:bg-[#e7eff2] text-[#0d283e]'
             }`}
             type="button"
           >
@@ -388,7 +388,7 @@ export const BookingsPage: React.FC = () => {
                     {item.relatedInvestigationId ? (
                       <button
                         onClick={() => handleInspectRefund(item.relatedInvestigationId!)}
-                        className="px-space-md py-1.5 rounded-full bg-primary-container hover:bg-primary-fixed-dim text-on-primary-container font-label-md text-xs font-bold transition-all cursor-pointer whitespace-nowrap shadow-xs"
+                        className="px-space-md py-1.5 rounded-full bg-gradient-to-r from-[#006D77] to-[#20B8B0] hover:from-[#005a63] hover:to-[#1aa39b] text-white font-label-md text-xs font-bold transition-all cursor-pointer whitespace-nowrap shadow-xs hover:shadow-sm"
                         type="button"
                       >
                         Inspect Refund

@@ -98,14 +98,14 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
         ref={buttonRef}
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold tracking-wide text-white/90 hover:text-white bg-white/10 hover:bg-white/15 border border-white/20 transition-all focus:outline-none focus:ring-2 focus:ring-[#20B8B0] focus:ring-offset-1 focus:ring-offset-[#0d283e] cursor-pointer"
+        className="inline-flex items-center gap-1.5 px-3 py-2 rounded-full text-xs font-semibold tracking-wide text-white/90 hover:text-white bg-white/10 hover:bg-white/20 border border-white/20 transition-all focus:outline-none focus:ring-2 focus:ring-[#20B8B0] focus:ring-offset-1 focus:ring-offset-[#0d283e] cursor-pointer"
         aria-haspopup="listbox"
         aria-expanded={isOpen}
         aria-label={`${t('nav.selectLanguage', 'Select Language')}: ${currentLanguageOption.nativeName}`}
         id="language-selector-button"
       >
         <span className="material-symbols-outlined text-[16px] text-[#20B8B0]">translate</span>
-        <span className="font-medium text-white">{currentLanguageOption.nativeName}</span>
+        <span className="font-semibold text-white">{currentLanguageOption.nativeName}</span>
         <span className="material-symbols-outlined text-[14px] text-white/60 transition-transform duration-200">
           {isOpen ? 'expand_less' : 'expand_more'}
         </span>
