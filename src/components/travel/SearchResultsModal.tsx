@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 interface SearchResultsModalProps {
@@ -13,6 +13,44 @@ export const SearchResultsModal: React.FC<SearchResultsModalProps> = ({
   onClose,
 }) => {
   const navigate = useNavigate();
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+
+  // Handle scroll locking and restoration properly when the booking panel opens and closes
+  useEffect(() => {
+    if (!isOpen || !searchData) return;
+
+    // 1. Capture exact scroll position of the webpage before opening the booking panel
+    const scrollY = window.scrollY || window.pageYOffset || document.documentElement.scrollTop || 0;
+    const originalBodyPosition = document.body.style.position;
+    const originalBodyTop = document.body.style.top;
+    const originalBodyWidth = document.body.style.width;
+    const originalBodyOverflow = document.body.style.overflow;
+
+    // 2. Lock the main webpage at its current scroll position so background & hero remain stationary
+    document.body.style.position = 'fixed';
+    document.body.style.top = `-${scrollY}px`;
+    document.body.style.width = '100%';
+    document.body.style.overflow = 'hidden';
+
+    // 3. Prevent touch-dragging the background page on mobile devices
+    const handleTouchMove = (e: TouchEvent) => {
+      if (scrollContainerRef.current && !scrollContainerRef.current.contains(e.target as Node)) {
+        e.preventDefault();
+      }
+    };
+
+    document.addEventListener('touchmove', handleTouchMove, { passive: false });
+
+    // 4. Clean up on panel close: restore normal webpage scrolling and previous page scroll position
+    return () => {
+      document.removeEventListener('touchmove', handleTouchMove);
+      document.body.style.position = originalBodyPosition;
+      document.body.style.top = originalBodyTop;
+      document.body.style.width = originalBodyWidth;
+      document.body.style.overflow = originalBodyOverflow;
+      window.scrollTo(0, scrollY);
+    };
+  }, [isOpen, searchData]);
 
   if (!isOpen || !searchData) return null;
 
@@ -149,13 +187,21 @@ export const SearchResultsModal: React.FC<SearchResultsModalProps> = ({
   const results = getResults();
 
   return (
-    <div className="fixed inset-0 bg-black/75 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in" onClick={onClose}>
+    <div
+      className="fixed inset-0 bg-black/75 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in overscroll-contain"
+      onClick={onClose}
+      onWheel={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+      }}
+    >
       <div 
-        className="w-full max-w-3xl bg-white rounded-3xl shadow-2xl border border-[#C2EAE7] overflow-hidden text-left" 
+        className="w-full max-w-3xl bg-white rounded-3xl shadow-2xl border border-[#C2EAE7] overflow-hidden text-left flex flex-col max-h-[90vh]" 
         onClick={(e) => e.stopPropagation()}
+        onWheel={(e) => e.stopPropagation()}
       >
         {/* Modal Header */}
-        <div className="bg-gradient-to-r from-[#0d283e] via-[#006D77] to-[#0a1e2e] text-white p-5 flex items-center justify-between">
+        <div className="bg-gradient-to-r from-[#0d283e] via-[#006D77] to-[#0a1e2e] text-white p-5 flex items-center justify-between shrink-0">
           <div>
             <div className="flex items-center gap-2">
               <span className="material-symbols-outlined text-[#E8B86D]">verified</span>
@@ -175,8 +221,12 @@ export const SearchResultsModal: React.FC<SearchResultsModalProps> = ({
           </button>
         </div>
 
-        {/* Content list */}
-        <div className="p-6 space-y-4 max-h-[65vh] overflow-y-auto">
+        {/* Content list - Independent tickets scroll area */}
+        <div
+          ref={scrollContainerRef}
+          className="p-6 space-y-4 flex-1 min-h-0 max-h-[65vh] overflow-y-auto overscroll-contain"
+          style={{ overscrollBehavior: 'contain', WebkitOverflowScrolling: 'touch' }}
+        >
           <div className="flex items-center justify-between p-3.5 rounded-2xl bg-[#EAF8F7] border border-[#BCE8E4] text-[#006D77] text-xs font-semibold">
             <span className="flex items-center gap-2">
               <span className="material-symbols-outlined text-[18px] text-[#20B8B0]">security</span>
@@ -239,7 +289,7 @@ export const SearchResultsModal: React.FC<SearchResultsModalProps> = ({
         </div>
 
         {/* Footer */}
-        <div className="bg-[#EAF8F7]/50 p-4 border-t border-[#C2EAE7] flex items-center justify-between text-xs text-[#5A738E]">
+        <div className="bg-[#EAF8F7]/50 p-4 border-t border-[#C2EAE7] flex items-center justify-between text-xs text-[#5A738E] shrink-0">
           <span>Search timestamp: {new Date().toLocaleTimeString()}</span>
           <button
             onClick={onClose}

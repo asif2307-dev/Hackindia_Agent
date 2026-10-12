@@ -680,7 +680,7 @@ export const LandingPage: React.FC = () => {
         <PopularDestinations onSelectCity={handleDestinationSelect} />
 
         {/* 8. High-Impact Call To Action Banner */}
-        <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16 w-full">
+        <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-12 pb-16 sm:pt-16 sm:pb-20 w-full">
           <div className="w-full rounded-3xl bg-gradient-to-r from-[#0d283e] via-[#006D77] to-[#0a1e2e] text-white p-8 sm:p-14 relative overflow-hidden flex flex-col items-center text-center shadow-2xl border border-[#20B8B0]/30">
             {/* Ambient Lighting */}
             <div className="absolute -top-32 left-1/2 -translate-x-1/2 w-[600px] h-[300px] bg-[#20B8B0]/20 blur-3xl pointer-events-none rounded-full" />
@@ -736,80 +736,6 @@ export const LandingPage: React.FC = () => {
           </div>
         </section>
       </main>
-
-      {/* 9. Polished Footer */}
-      <footer className="w-full bg-[#0a1b28] text-white border-t border-white/10 mt-auto">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 flex flex-col md:flex-row items-center justify-between gap-8 text-left">
-          <div className="flex flex-col gap-2">
-            <div
-              className="flex items-center gap-2.5 cursor-pointer"
-              onClick={() => {
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-                navigate('/');
-              }}
-            >
-              <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-[#20B8B0] via-[#006D77] to-white p-0.5">
-                <div className="w-full h-full bg-[#0d283e] rounded-[10px] flex items-center justify-center text-[#E8B86D] font-extrabold text-xs">
-                  AT
-                </div>
-              </div>
-              <span className="text-xl text-white font-black font-['Plus_Jakarta_Sans']">Agent Travel</span>
-              <span className="text-[10px] font-bold uppercase tracking-widest px-1.5 py-0.5 rounded bg-[#E8B86D] text-[#0d283e]">
-                YATRA
-              </span>
-            </div>
-            <p className="text-xs text-white/70 max-w-md mt-1 leading-relaxed">
-              {t('footer.about', 'Autonomous travel disruption resolution and regulatory financial restitution engine. Real-time aviation telemetry parsed through automated claim compliance algorithms.')}
-            </p>
-          </div>
-
-          <div className="flex flex-wrap items-center gap-4 sm:gap-6 text-xs text-white/80">
-            <button
-              onClick={() => scrollToSection('how-it-works')}
-              className="hover:text-white transition-colors cursor-pointer"
-            >
-              {t('nav.howItWorks', 'How It Works')}
-            </button>
-            <button
-              onClick={() => scrollToSection('features')}
-              className="hover:text-white transition-colors cursor-pointer"
-            >
-              {t('nav.features', 'Features')}
-            </button>
-            <button
-              onClick={() => scrollToSection('refund-engine')}
-              className="hover:text-[#E8B86D] transition-colors cursor-pointer text-[#20B8B0] font-bold"
-            >
-              {t('nav.refundEngine', 'Refund Engine')}
-            </button>
-            <button
-              onClick={() => scrollToSection('special-offers')}
-              className="hover:text-white transition-colors cursor-pointer"
-            >
-              {t('nav.offers', 'Offers')}
-            </button>
-            <button
-              onClick={() => navigate('/bookings')}
-              className="hover:text-white transition-colors cursor-pointer"
-            >
-              {t('nav.myBookings', 'My Bookings')}
-            </button>
-            <button
-              onClick={() => navigate('/dashboard')}
-              className="hover:text-white transition-colors cursor-pointer"
-            >
-              {t('nav.refundConsole', 'Refund Console')}
-            </button>
-          </div>
-        </div>
-
-        <div className="border-t border-white/10">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex flex-col sm:flex-row items-center justify-between gap-2 text-[11px] text-white/60">
-            <span>{t('footer.copyright', '© 2026 Agent Travel Technologies Inc. All rights reserved.')}</span>
-            <span>{t('footer.disclaimer', 'Disclaimers: Flight claim compensation is subject to jurisdiction protocols including EC 261/2004, UK 261, and DGCA CAR provisions.')}</span>
-          </div>
-        </div>
-      </footer>
 
       {/* Floating AI Assistant Chatbot */}
       <AiChatbotDrawer />
