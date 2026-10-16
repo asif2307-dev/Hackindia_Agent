@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { SiteHeader } from '../components/layout/SiteHeader';
 import { SiteFooter } from '../components/layout/SiteFooter';
+import { useTravelBooking } from '../context/TravelBookingContext';
 
 type CategoryType = 'All' | 'Beaches' | 'Mountains' | 'Heritage' | 'Spiritual' | 'Backwaters' | 'International';
 
@@ -18,7 +19,25 @@ interface DestinationItem {
 
 export const DestinationsPage: React.FC = () => {
   const navigate = useNavigate();
+  const { setSearchCriteria } = useTravelBooking();
   const [selectedCategory, setSelectedCategory] = useState<CategoryType>('All');
+
+  const handleExplore = (destinationName: string) => {
+    // Map common destination names to airport format if needed, or pass clean name
+    const airportMap: Record<string, string> = {
+      Kashmir: 'Srinagar (SXR)',
+      Goa: 'Goa (GOI)',
+      Manali: 'Kullu (KUU)',
+      Jaipur: 'Jaipur (JAI)',
+      'Kerala (Alleppey)': 'Kochi (COK)',
+      Varanasi: 'Varanasi (VNS)',
+      Dubai: 'Dubai (DXB)',
+      Shimla: 'Shimla (SLV)',
+    };
+    const targetDest = airportMap[destinationName] || destinationName;
+    setSearchCriteria({ destination: targetDest });
+    navigate('/flights');
+  };
 
   const categories: CategoryType[] = [
     'All',
@@ -190,7 +209,7 @@ export const DestinationsPage: React.FC = () => {
                 <span className="text-lg font-bold text-[#0d3d3a]">₹ 4,899</span>
               </div>
               <button
-                onClick={() => navigate('/flights')}
+                onClick={() => handleExplore('Kashmir')}
                 className="bg-[#0d6b63] text-white px-4 py-2 rounded-md text-xs font-semibold hover:bg-[#0a534d] transition-colors shadow-sm"
               >
                 Search flights →
@@ -204,7 +223,8 @@ export const DestinationsPage: React.FC = () => {
           {filtered.map((d) => (
             <div
               key={d.id}
-              className="group bg-white rounded-xl border border-[#e3ded4] overflow-hidden shadow-sm hover:shadow-md transition-all hover:-translate-y-0.5 flex flex-col"
+              className="group bg-white rounded-xl border border-[#e3ded4] overflow-hidden shadow-sm hover:shadow-md transition-all hover:-translate-y-0.5 flex flex-col cursor-pointer"
+              onClick={() => handleExplore(d.name)}
             >
               <div className="h-44 overflow-hidden relative">
                 <img
@@ -235,7 +255,10 @@ export const DestinationsPage: React.FC = () => {
                     Best: {d.bestTime}
                   </span>
                   <button
-                    onClick={() => navigate('/flights')}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleExplore(d.name);
+                    }}
                     className="text-[#0d6b63] font-semibold hover:underline"
                   >
                     Explore →

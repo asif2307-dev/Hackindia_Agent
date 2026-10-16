@@ -2,101 +2,26 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { SiteHeader } from '../components/layout/SiteHeader';
 import { SiteFooter } from '../components/layout/SiteFooter';
+import { useTravelBooking, StoredBooking } from '../context/TravelBookingContext';
 
 type StatusTab = 'upcoming' | 'completed' | 'cancelled' | 'all';
-type ServiceFilter = 'all' | 'flights' | 'hotels' | 'trains' | 'buses' | 'cabs';
-
-interface BookingItem {
-  id: string;
-  refLabel: string;
-  serviceType: 'FLIGHT' | 'HOTEL' | 'TRAIN' | 'BUS' | 'CAB';
-  title: string;
-  status: 'Cancelled by airline' | 'Confirmed';
-  statusColor: 'error' | 'success';
-  hasRefundAlert?: boolean;
-  refundCaseId?: string;
-  details: { label: string; value: string }[];
-}
+type ServiceFilter = 'all' | 'flights' | 'hotels' | 'trains' | 'buses' | 'cabs' | 'holidays';
 
 export const BookingsPage: React.FC = () => {
+  const { userBookings, bookingSuccessAlert, clearBookingSuccessAlert } = useTravelBooking();
   const [activeTab, setActiveTab] = useState<StatusTab>('upcoming');
   const [serviceFilter, setServiceFilter] = useState<ServiceFilter>('all');
-  const [selectedBookingDetails, setSelectedBookingDetails] = useState<BookingItem | null>(null);
+  const [selectedBookingDetails, setSelectedBookingDetails] = useState<StoredBooking | null>(null);
 
-  const bookings: BookingItem[] = [
-    {
-      id: 'BK-1',
-      refLabel: 'PNR · ABC123',
-      serviceType: 'FLIGHT',
-      title: 'Delhi → Mumbai',
-      status: 'Cancelled by airline',
-      statusColor: 'error',
-      hasRefundAlert: true,
-      refundCaseId: 'RF12345',
-      details: [
-        { label: 'TRAVELLER', value: '1 · Economy' },
-        { label: 'DATE', value: '24 Oct 2026' },
-        { label: 'DEPARTS', value: '06:10' },
-      ],
-    },
-    {
-      id: 'BK-2',
-      refLabel: 'Booking ID · HTL456',
-      serviceType: 'HOTEL',
-      title: 'Goa Beach Resort',
-      status: 'Confirmed',
-      statusColor: 'success',
-      details: [
-        { label: 'CHECK-IN', value: '12 Dec 2026' },
-        { label: 'CHECK-OUT', value: '16 Dec 2026' },
-        { label: 'GUESTS', value: '2' },
-      ],
-    },
-    {
-      id: 'BK-3',
-      refLabel: 'PNR · 4521896307',
-      serviceType: 'TRAIN',
-      title: 'New Delhi → Jaipur',
-      status: 'Confirmed',
-      statusColor: 'success',
-      details: [
-        { label: 'DATE', value: '02 Nov 2026' },
-        { label: 'PASSENGERS', value: '2 · Chair Car' },
-        { label: 'DEPARTS', value: '06:05' },
-      ],
-    },
-    {
-      id: 'BK-4',
-      refLabel: 'Ticket · BUS78231',
-      serviceType: 'BUS',
-      title: 'Bengaluru → Goa',
-      status: 'Confirmed',
-      statusColor: 'success',
-      details: [
-        { label: 'DATE', value: '06 Nov 2026' },
-        { label: 'SEAT', value: 'Lower berth, L4' },
-        { label: 'DEPARTS', value: '21:30' },
-      ],
-    },
-    {
-      id: 'BK-5',
-      refLabel: 'Booking · CAB55102',
-      serviceType: 'CAB',
-      title: 'Delhi Airport → Connaught Place',
-      status: 'Confirmed',
-      statusColor: 'success',
-      details: [
-        { label: 'VEHICLE', value: 'Sedan' },
-        { label: 'PICKUP', value: '08:30' },
-        { label: 'DATE', value: '24 Oct 2026' },
-      ],
-    },
-  ];
+  const upcomingCount = userBookings.filter((b) => !b.status.includes('Cancelled')).length;
+  const cancelledCount = userBookings.filter((b) => b.status.includes('Cancelled')).length;
+  const cancelledBooking = userBookings.find((b) => b.hasRefundAlert || b.status.includes('Cancelled'));
 
-  const filteredBookings = bookings.filter((b) => {
+  const filteredBookings = userBookings.filter((b) => {
     // Status tab filter
-    if (activeTab === 'cancelled' && b.status !== 'Cancelled by airline') return false;
-    if (activeTab === 'completed') return false; // sample data currently contains 5 upcoming trips
+    if (activeTab === 'cancelled' && !b.status.includes('Cancelled')) return false;
+    if (activeTab === 'upcoming' && b.status.includes('Cancelled')) return false;
+    if (activeTab === 'completed') return false; // sample data currently contains upcoming/cancelled trips
 
     // Service mode filter
     if (serviceFilter === 'flights' && b.serviceType !== 'FLIGHT') return false;
@@ -104,6 +29,7 @@ export const BookingsPage: React.FC = () => {
     if (serviceFilter === 'trains' && b.serviceType !== 'TRAIN') return false;
     if (serviceFilter === 'buses' && b.serviceType !== 'BUS') return false;
     if (serviceFilter === 'cabs' && b.serviceType !== 'CAB') return false;
+    if (serviceFilter === 'holidays' && b.serviceType !== 'HOLIDAY') return false;
 
     return true;
   });
@@ -139,26 +65,45 @@ export const BookingsPage: React.FC = () => {
           </Link>
         </div>
 
-        {/* CANCELLATION DISRUPTION ALERT BANNER (Page 8) */}
-        <div className="my-6 bg-[#fffbeb] border border-[#fde68a] rounded-xl p-4 sm:p-5 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 shadow-sm">
-          <div className="flex items-start gap-3">
-            <span className="material-symbols-outlined text-[22px] text-[#b45309] shrink-0 mt-0.5">
-              warning
-            </span>
-            <div className="text-xs sm:text-sm text-[#92400e] leading-relaxed">
-              <strong>Your Delhi → Mumbai flight was cancelled by the airline.</strong> Our AI can help you check refund eligibility and track your claim.
+        {/* Booking Success Banner */}
+        {bookingSuccessAlert && (
+          <div className="my-4 bg-[#ecfdf5] border border-[#bbf7d0] rounded-xl p-4 flex items-center justify-between text-xs sm:text-sm text-[#166534] shadow-sm animate-fade-in">
+            <div className="flex items-center gap-2">
+              <span className="material-symbols-outlined text-[20px] text-[#166534]">check_circle</span>
+              <span className="font-semibold">{bookingSuccessAlert}</span>
             </div>
+            <button
+              onClick={clearBookingSuccessAlert}
+              className="text-[#166534] hover:text-[#064e3b] font-bold p-1"
+              aria-label="Dismiss alert"
+            >
+              <span className="material-symbols-outlined text-[18px]">close</span>
+            </button>
           </div>
+        )}
 
-          <Link
-            to="/refunds/RF12345"
-            className="shrink-0 bg-[#0d6b63] text-white px-4 py-2 rounded-md text-xs font-semibold hover:bg-[#0a534d] transition-colors whitespace-nowrap shadow-sm"
-          >
-            Check Refund Eligibility →
-          </Link>
-        </div>
+        {/* CANCELLATION DISRUPTION ALERT BANNER (Page 8) */}
+        {cancelledBooking && (
+          <div className="my-6 bg-[#fffbeb] border border-[#fde68a] rounded-xl p-4 sm:p-5 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 shadow-sm">
+            <div className="flex items-start gap-3">
+              <span className="material-symbols-outlined text-[22px] text-[#b45309] shrink-0 mt-0.5">
+                warning
+              </span>
+              <div className="text-xs sm:text-sm text-[#92400e] leading-relaxed">
+                <strong>Your {cancelledBooking.title} was cancelled by the carrier.</strong> Our AI can help you check refund eligibility and track your claim.
+              </div>
+            </div>
 
-        {/* Status Tabs (Upcoming (5), Completed, Cancelled, All) */}
+            <Link
+              to={`/refunds/${cancelledBooking.refundCaseId || 'RF12345'}`}
+              className="shrink-0 bg-[#0d6b63] text-white px-4 py-2 rounded-md text-xs font-semibold hover:bg-[#0a534d] transition-colors whitespace-nowrap shadow-sm"
+            >
+              Check Refund Eligibility →
+            </Link>
+          </div>
+        )}
+
+        {/* Status Tabs (Upcoming, Completed, Cancelled, All) */}
         <div className="flex flex-wrap items-center justify-between gap-4 py-3 border-b border-[#e3ded4]">
           <div className="flex items-center gap-2">
             <button
@@ -169,7 +114,7 @@ export const BookingsPage: React.FC = () => {
                   : 'text-[#42504e] hover:bg-[#eae4d8]'
               }`}
             >
-              Upcoming (5)
+              Upcoming ({upcomingCount})
             </button>
             <button
               onClick={() => setActiveTab('completed')}
@@ -189,7 +134,7 @@ export const BookingsPage: React.FC = () => {
                   : 'text-[#42504e] hover:bg-[#eae4d8]'
               }`}
             >
-              Cancelled
+              Cancelled {cancelledCount > 0 ? `(${cancelledCount})` : ''}
             </button>
             <button
               onClick={() => setActiveTab('all')}
@@ -199,13 +144,13 @@ export const BookingsPage: React.FC = () => {
                   : 'text-[#42504e] hover:bg-[#eae4d8]'
               }`}
             >
-              All
+              All ({userBookings.length})
             </button>
           </div>
 
           {/* Service Filters */}
           <div className="flex items-center gap-1.5 overflow-x-auto text-xs">
-            {(['all', 'flights', 'hotels', 'trains', 'buses', 'cabs'] as ServiceFilter[]).map(
+            {(['all', 'flights', 'hotels', 'trains', 'buses', 'cabs', 'holidays'] as ServiceFilter[]).map(
               (svc) => (
                 <button
                   key={svc}
@@ -237,6 +182,15 @@ export const BookingsPage: React.FC = () => {
                   </span>
                   <span className="text-[#889593]">•</span>
                   <span className="text-xs font-bold text-[#0d3d3a]">{b.serviceType}</span>
+                  {b.paymentStatus === 'PAID' && (
+                    <>
+                      <span className="text-[#889593]">•</span>
+                      <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-[#0d6b63] bg-[#e8f2f0] px-2 py-0.5 rounded-full border border-[#d0dfd3]">
+                        <span className="material-symbols-outlined text-[12px]">verified</span>
+                        Razorpay Paid
+                      </span>
+                    </>
+                  )}
                 </div>
 
                 <span
@@ -390,6 +344,24 @@ export const BookingsPage: React.FC = () => {
                   <span className="text-[#889593]">Status</span>
                   <span className="font-semibold text-[#166534]">{selectedBookingDetails.status}</span>
                 </div>
+                {selectedBookingDetails.paymentStatus && (
+                  <div className="flex justify-between py-1 border-b border-[#f0ebe1]">
+                    <span className="text-[#889593]">Payment Status</span>
+                    <span className="font-semibold text-[#0d6b63]">{selectedBookingDetails.paymentStatus}</span>
+                  </div>
+                )}
+                {selectedBookingDetails.razorpayPaymentId && (
+                  <div className="flex justify-between py-1 border-b border-[#f0ebe1]">
+                    <span className="text-[#889593]">Razorpay Payment ID</span>
+                    <span className="font-mono text-[#0d3d3a]">{selectedBookingDetails.razorpayPaymentId}</span>
+                  </div>
+                )}
+                {selectedBookingDetails.razorpayOrderId && (
+                  <div className="flex justify-between py-1 border-b border-[#f0ebe1]">
+                    <span className="text-[#889593]">Razorpay Order ID</span>
+                    <span className="font-mono text-[#0d3d3a]">{selectedBookingDetails.razorpayOrderId}</span>
+                  </div>
+                )}
               </div>
 
               <div className="pt-2 flex justify-end gap-2">

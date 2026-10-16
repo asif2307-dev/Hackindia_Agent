@@ -1,99 +1,61 @@
 import React, { useState } from 'react';
 import { ReviewerHeader } from '../components/layout/ReviewerHeader';
-
-interface QueueCase {
-  id: string;
-  service: string;
-  serviceType: string;
-  route: string;
-  status: 'Ready for review' | 'Needs documents' | 'AI review';
-  farePaid: string;
-  flightOrEntity: string;
-  traveller: string;
-}
+import { useInvestigation } from '../context/InvestigationContext';
 
 export const HumanReviewPage: React.FC = () => {
+  const { cases, approveRefund, requestManualReview, rejectRecommendation } = useInvestigation();
+
   const [selectedFilter, setSelectedFilter] = useState<'All' | 'Ready' | 'Docs'>('All');
-  const [selectedCaseId, setSelectedCaseId] = useState<string>('RF12345');
+  const [selectedCaseId, setSelectedCaseId] = useState<string>('AT-9842');
   const [decision, setDecision] = useState<string>('eligible');
   const [reviewerNote, setReviewerNote] = useState<string>(
-    'I have reviewed the AI findings and the supporting documents. Carrier operational cancellation confirmed in Amadeus logs.'
+    'I have reviewed the AI findings and the supporting documents. Carrier operational cancellation confirmed in GDS logs.'
   );
   const [submittedAlert, setSubmittedAlert] = useState<string | null>(null);
 
-  const queueCases: QueueCase[] = [
-    {
-      id: 'RF12345',
-      service: 'Flight',
-      serviceType: 'flight',
-      flightOrEntity: 'AI-805 · 24 Oct 2026',
-      route: 'Delhi → Mumbai',
-      status: 'Ready for review',
-      farePaid: '₹ 4,872',
-      traveller: '1 · Economy',
-    },
-    {
-      id: 'RF12360',
-      service: 'Flight',
-      serviceType: 'flight',
-      flightOrEntity: '6E-402 · 25 Oct 2026',
-      route: 'Bengaluru → Kochi',
-      status: 'Needs documents',
-      farePaid: '₹ 3,420',
-      traveller: '1 · Economy',
-    },
-    {
-      id: 'RF12371',
-      service: 'Hotel',
-      serviceType: 'hotel',
-      flightOrEntity: 'Goa Beach Resort',
-      route: 'Goa Beach Resort',
-      status: 'Ready for review',
-      farePaid: '₹ 8,900',
-      traveller: '2 Guests',
-    },
-    {
-      id: 'RF12388',
-      service: 'Train',
-      serviceType: 'train',
-      flightOrEntity: 'Deccan Queen #12124',
-      route: 'Mumbai → Pune',
-      status: 'AI review',
-      farePaid: '₹ 1,140',
-      traveller: '2 · Chair Car',
-    },
-    {
-      id: 'RF12402',
-      service: 'Bus',
-      serviceType: 'bus',
-      flightOrEntity: 'Coastline Travels',
-      route: 'Bengaluru → Goa',
-      status: 'Ready for review',
-      farePaid: '₹ 1,850',
-      traveller: '1 · Sleeper',
-    },
-  ];
+  // Filter cases relevant for human review queue
+  const reviewQueue = cases.filter(
+    (c) =>
+      c.humanReviewRequired ||
+      c.decisionStatus === 'Under Human Review' ||
+      c.decisionStatus === 'Pending Human Approval' ||
+      c.decisionStatus === 'Ready for Payout' ||
+      c.decisionStatus === 'Awaiting Carrier Evidence'
+  );
 
-  const filteredCases = queueCases.filter((c) => {
-    if (selectedFilter === 'Ready') return c.status === 'Ready for review';
-    if (selectedFilter === 'Docs') return c.status === 'Needs documents';
+  const filteredCases = (reviewQueue.length > 0 ? reviewQueue : cases).filter((c) => {
+    if (selectedFilter === 'Ready') return c.decisionStatus === 'Ready for Payout' || c.decisionStatus === 'Pending Human Approval';
+    if (selectedFilter === 'Docs') return c.decisionStatus === 'Awaiting Carrier Evidence' || c.decisionStatus === 'Under Human Review';
     return true;
   });
 
-  const selectedCase = queueCases.find((c) => c.id === selectedCaseId) || queueCases[0];
+  const selectedCase =
+    cases.find((c) => c.id === selectedCaseId || c.caseRef === selectedCaseId) ||
+    filteredCases[0] ||
+    cases[0];
 
   const handleConfirmSubmit = () => {
-    setSubmittedAlert(`Case #${selectedCase.id} decision recorded: Claim submitted to provider.`);
+    if (decision === 'eligible') {
+      approveRefund(selectedCase.id, reviewerNote);
+      setSubmittedAlert(`Case #${selectedCase.caseRef} approved! Refund payout authorization recorded in audit ledger.`);
+    } else if (decision === 'more_docs') {
+      requestManualReview(selectedCase.id, reviewerNote);
+      setSubmittedAlert(`Case #${selectedCase.caseRef} marked for additional document verification.`);
+    } else {
+      rejectRecommendation(selectedCase.id, reviewerNote || 'Claim rejected following human auditor review.');
+      setSubmittedAlert(`Case #${selectedCase.caseRef} closed as not eligible. Finding recorded.`);
+    }
     setTimeout(() => setSubmittedAlert(null), 3500);
   };
 
   const handleSaveDraft = () => {
-    setSubmittedAlert(`Draft saved for Case #${selectedCase.id}.`);
+    setSubmittedAlert(`Draft note saved for Case #${selectedCase.caseRef}.`);
     setTimeout(() => setSubmittedAlert(null), 3000);
   };
 
   const handleEscalate = () => {
-    setSubmittedAlert(`Case #${selectedCase.id} escalated to Principal Auditor Julian Hayes.`);
+    requestManualReview(selectedCase.id, `Escalated to Senior Audit Reviewer: ${reviewerNote}`);
+    setSubmittedAlert(`Case #${selectedCase.caseRef} escalated to Senior Review Desk.`);
     setTimeout(() => setSubmittedAlert(null), 3500);
   };
 
@@ -121,7 +83,7 @@ export const HumanReviewPage: React.FC = () => {
             </p>
           </div>
           <span className="self-start sm:self-auto text-xs font-semibold px-3 py-1 rounded-full bg-[#e8f2f0] text-[#0d6b63] border border-[#d0dfd3]">
-            {queueCases.length} cases in your queue
+            {filteredCases.length} cases in your queue
           </span>
         </div>
 
@@ -158,26 +120,26 @@ export const HumanReviewPage: React.FC = () => {
               >
                 <div className="flex items-center justify-between">
                   <span className="font-mono font-bold text-[#0d3d3a]">
-                    #{c.id} · {c.service}
+                    #{c.caseRef} · {c.carrier.type.toUpperCase()}
                   </span>
                   <span
                     className={`px-2 py-0.5 rounded-full text-[10px] font-semibold border ${
-                      c.status === 'Ready for review'
+                      c.decisionStatus === 'Ready for Payout' || c.decisionStatus === 'Approved'
                         ? 'bg-[#ecfdf5] text-[#166534] border-[#bbf7d0]'
-                        : c.status === 'Needs documents'
+                        : c.decisionStatus === 'Awaiting Carrier Evidence'
                         ? 'bg-[#fffbeb] text-[#92400e] border-[#fde68a]'
                         : 'bg-[#e8f2f0] text-[#0d6b63] border-[#d0dfd3]'
                     }`}
                   >
-                    {c.status}
+                    {c.decisionStatus}
                   </span>
                 </div>
 
-                <div className="font-semibold text-sm text-[#0d3d3a]">{c.route}</div>
+                <div className="font-semibold text-sm text-[#0d3d3a]">{c.carrier.route}</div>
 
                 <div className="flex items-center justify-between text-[#6b7775] pt-1 text-[11px] border-t border-[#f0ebe1]">
-                  <span>{c.flightOrEntity}</span>
-                  <span className="font-semibold text-[#0d3d3a]">{c.farePaid}</span>
+                  <span>{c.carrier.name} · {c.carrier.code}</span>
+                  <span className="font-semibold text-[#0d3d3a]">{c.claimAmountFormatted}</span>
                 </div>
               </div>
             ))}
@@ -190,17 +152,17 @@ export const HumanReviewPage: React.FC = () => {
               <div>
                 <div className="flex items-center gap-3">
                   <h2 className="text-xl font-bold text-[#0d3d3a]">
-                    Case #{selectedCase.id}
+                    Case #{selectedCase.caseRef}
                   </h2>
                   <span className="px-2.5 py-0.5 rounded-full bg-[#ecfdf5] text-[#166534] text-xs font-semibold border border-[#bbf7d0]">
-                    {selectedCase.status}
+                    {selectedCase.decisionStatus}
                   </span>
                 </div>
-                <p className="text-xs text-[#6b7775] mt-0.5">{selectedCase.route}</p>
+                <p className="text-xs text-[#6b7775] mt-0.5">{selectedCase.carrier.route}</p>
               </div>
 
               <span className="font-mono font-bold text-lg text-[#0d3d3a]">
-                {selectedCase.farePaid}
+                {selectedCase.claimAmountFormatted}
               </span>
             </div>
 
@@ -208,41 +170,45 @@ export const HumanReviewPage: React.FC = () => {
             <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 p-3.5 rounded-lg bg-[#fbf9f4] border border-[#e3ded4] text-xs">
               <div>
                 <span className="text-[10px] text-[#889593] font-bold uppercase block">Service</span>
-                <span className="font-semibold text-[#0d3d3a]">{selectedCase.service}</span>
+                <span className="font-semibold text-[#0d3d3a] capitalize">{selectedCase.carrier.type}</span>
               </div>
               <div>
                 <span className="text-[10px] text-[#889593] font-bold uppercase block">Details</span>
-                <span className="font-semibold text-[#0d3d3a] truncate block">{selectedCase.flightOrEntity}</span>
+                <span className="font-semibold text-[#0d3d3a] truncate block">{selectedCase.carrier.name} · {selectedCase.carrier.code}</span>
               </div>
               <div>
                 <span className="text-[10px] text-[#889593] font-bold uppercase block">Route</span>
-                <span className="font-semibold text-[#0d3d3a] truncate block">{selectedCase.route}</span>
+                <span className="font-semibold text-[#0d3d3a] truncate block">{selectedCase.carrier.route}</span>
               </div>
               <div>
                 <span className="text-[10px] text-[#889593] font-bold uppercase block">Traveller</span>
-                <span className="font-semibold text-[#0d3d3a]">{selectedCase.traveller}</span>
+                <span className="font-semibold text-[#0d3d3a]">{selectedCase.traveler.name}</span>
               </div>
               <div>
-                <span className="text-[10px] text-[#889593] font-bold uppercase block">Fare Paid</span>
-                <span className="font-bold text-[#0d6b63]">{selectedCase.farePaid}</span>
+                <span className="text-[10px] text-[#889593] font-bold uppercase block">Claim Amount</span>
+                <span className="font-bold text-[#0d6b63]">{selectedCase.claimAmountFormatted}</span>
               </div>
             </div>
 
             {/* AI Summary Box (Page 11) */}
             <div className="p-4 rounded-lg bg-[#e8f2f0]/60 border border-[#d0dfd3] space-y-1.5 text-xs">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-[#0d6b63] block">
-                AI Summary · For Human Review
-              </span>
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-bold uppercase tracking-wider text-[#0d6b63] block">
+                  AI Summary · For Human Review
+                </span>
+                <span className="text-[11px] font-semibold text-[#0d6b63]">
+                  {selectedCase.aiConfidence}% Confidence ({selectedCase.evidenceStrength})
+                </span>
+              </div>
               <p className="text-[#2d5650] leading-relaxed">
-                The airline's records show the flight as cancelled, and the ticket and payment details match the traveller. The case
-                appears to meet the conditions of the airline's published cancellation policy. This is a recommendation only.
+                {selectedCase.synthesis || selectedCase.reasonSummary}
               </p>
             </div>
 
             {/* Evidence Checked Table (Page 11) */}
             <div className="space-y-2">
               <h3 className="text-xs font-bold text-[#0d3d3a] uppercase tracking-wider">
-                Evidence checked
+                Evidence checked ({selectedCase.artifacts?.length || 0} items)
               </h3>
 
               <div className="border border-[#e3ded4] rounded-lg overflow-hidden text-xs">
@@ -255,50 +221,34 @@ export const HumanReviewPage: React.FC = () => {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-[#f0ebe1]">
-                    <tr>
-                      <td className="p-3 font-medium text-[#0d3d3a]">
-                        Cancellation of AI-805 confirmed
-                      </td>
-                      <td className="p-3 text-[#6b7775]">Airline operational record</td>
-                      <td className="p-3">
-                        <span className="px-2 py-0.5 rounded bg-[#ecfdf5] text-[#166534] font-semibold text-[11px]">
-                          Matches
-                        </span>
-                      </td>
-                    </tr>
-                    <tr>
-                      <td className="p-3 font-medium text-[#0d3d3a]">
-                        cancellation_email.pdf
-                      </td>
-                      <td className="p-3 text-[#6b7775]">Traveller document</td>
-                      <td className="p-3">
-                        <span className="px-2 py-0.5 rounded bg-[#ecfdf5] text-[#166534] font-semibold text-[11px]">
-                          Reviewed
-                        </span>
-                      </td>
-                    </tr>
-                    <tr>
-                      <td className="p-3 font-medium text-[#0d3d3a]">
-                        ₹ 4,872 paid by card
-                      </td>
-                      <td className="p-3 text-[#6b7775]">Payment receipt</td>
-                      <td className="p-3">
-                        <span className="px-2 py-0.5 rounded bg-[#ecfdf5] text-[#166534] font-semibold text-[11px]">
-                          Matches
-                        </span>
-                      </td>
-                    </tr>
-                    <tr>
-                      <td className="p-3 font-medium text-[#0d3d3a]">
-                        Cancellation by airline, section 3.2
-                      </td>
-                      <td className="p-3 text-[#6b7775]">Airline policy</td>
-                      <td className="p-3">
-                        <span className="px-2 py-0.5 rounded bg-[#fffbeb] text-[#92400e] font-semibold text-[11px]">
-                          Needs reviewer check
-                        </span>
-                      </td>
-                    </tr>
+                    {selectedCase.artifacts && selectedCase.artifacts.length > 0 ? (
+                      selectedCase.artifacts.map((art) => (
+                        <tr key={art.id}>
+                          <td className="p-3 font-medium text-[#0d3d3a]">
+                            <div className="flex items-center gap-2">
+                              <span className={`material-symbols-outlined text-[16px] ${art.iconColor || 'text-[#0d6b63]'}`}>
+                                {art.icon || 'description'}
+                              </span>
+                              <span>{art.title}</span>
+                            </div>
+                          </td>
+                          <td className="p-3 text-[#6b7775]">{art.source}</td>
+                          <td className="p-3">
+                            <span className={`px-2 py-0.5 rounded font-semibold text-[11px] ${
+                              art.verified ? 'bg-[#ecfdf5] text-[#166534]' : 'bg-[#fffbeb] text-[#92400e]'
+                            }`}>
+                              {art.verified ? 'Verified · Matches' : 'Under Review'}
+                            </span>
+                          </td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td colSpan={3} className="p-3 text-center text-[#6b7775]">
+                          No artifacts currently recorded for this case.
+                        </td>
+                      </tr>
+                    )}
                   </tbody>
                 </table>
               </div>
@@ -433,26 +383,30 @@ export const HumanReviewPage: React.FC = () => {
             {/* Case History Log (Page 11) */}
             <div className="space-y-3 pt-4 border-t border-[#e3ded4]">
               <h3 className="text-xs font-bold text-[#0d3d3a] uppercase tracking-wider">
-                Case history
+                Case history & Audit Trail
               </h3>
 
               <div className="space-y-2 text-xs">
-                <div className="flex items-center justify-between py-1 text-[#6b7775]">
-                  <span>Case submitted by traveller</span>
-                  <span className="text-[#889593]">18 Oct, 09:12</span>
-                </div>
-                <div className="flex items-center justify-between py-1 text-[#6b7775]">
-                  <span>Documents uploaded</span>
-                  <span className="text-[#889593]">18 Oct, 09:40</span>
-                </div>
-                <div className="flex items-center justify-between py-1 text-[#6b7775]">
-                  <span>AI review completed</span>
-                  <span className="text-[#889593]">20 Oct, 10:24</span>
-                </div>
-                <div className="flex items-center justify-between py-1 text-[#0d6b63] font-semibold">
-                  <span>Assigned to Meera Iyer</span>
-                  <span>20 Oct, 10:30</span>
-                </div>
+                {selectedCase.auditLog && selectedCase.auditLog.length > 0 ? (
+                  selectedCase.auditLog.map((log) => (
+                    <div key={log.id} className="flex items-center justify-between py-1 text-[#6b7775]">
+                      <div className="flex items-center gap-2">
+                        <span className={`w-2 h-2 rounded-full ${log.dotColor || 'bg-[#0d6b63]'}`}></span>
+                        <span className="font-medium text-[#0d3d3a]">{log.title}</span>
+                        {log.description && <span className="text-[#889593]">({log.description})</span>}
+                      </div>
+                      <span className="text-[#889593] font-mono text-[11px]">{log.time}</span>
+                    </div>
+                  ))
+                ) : (
+                  <div className="py-1 text-[#6b7775]">Initial case intake recorded in audit ledger.</div>
+                )}
+                {selectedCase.assignedAuditor && (
+                  <div className="flex items-center justify-between py-1 text-[#0d6b63] font-semibold border-t border-[#f0ebe1] pt-2">
+                    <span>Assigned to {selectedCase.assignedAuditor}</span>
+                    <span>Active Queue</span>
+                  </div>
+                )}
               </div>
             </div>
           </div>

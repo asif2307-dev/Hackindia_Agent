@@ -9,6 +9,19 @@ export const SiteHeader: React.FC<SiteHeaderProps> = ({ activeTab }) => {
   const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [serviceNavOpen, setServiceNavOpen] = useState(false);
+  const [currentUser, setCurrentUser] = useState<{ name: string; email: string } | null>(() => {
+    try {
+      const raw = sessionStorage.getItem('agent_travel_user');
+      return raw ? JSON.parse(raw) : null;
+    } catch {
+      return null;
+    }
+  });
+
+  const handleSignOut = () => {
+    sessionStorage.removeItem('agent_travel_user');
+    setCurrentUser(null);
+  };
 
   const isActive = (path: string) => {
     if (activeTab && path.includes(activeTab)) return true;
@@ -168,19 +181,46 @@ export const SiteHeader: React.FC<SiteHeaderProps> = ({ activeTab }) => {
             Reviewer console
           </Link>
 
-          <Link
-            to="/signin"
-            className="text-[13px] font-medium text-[#42504e] hover:text-[#0d3d3a] px-2.5 py-1.5 rounded-md transition-colors"
-          >
-            Sign in
-          </Link>
+          {currentUser ? (
+            <div className="flex items-center gap-2">
+              <Link
+                to="/account"
+                className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#e8f2f0] border border-[#d0dfd3] hover:border-[#0d6b63] transition-colors"
+                title={currentUser.email}
+              >
+                <span className="w-5 h-5 rounded-full bg-[#0d6b63] text-white flex items-center justify-center font-bold text-[10px]">
+                  {currentUser.name ? currentUser.name[0].toUpperCase() : 'U'}
+                </span>
+                <span className="text-xs font-semibold text-[#0d3d3a] hidden sm:inline max-w-[120px] truncate">
+                  {currentUser.name}
+                </span>
+              </Link>
+              <button
+                type="button"
+                onClick={handleSignOut}
+                className="text-[12px] font-medium text-[#6b7775] hover:text-[#991b1b] px-2 py-1 transition-colors"
+                title="Sign out"
+              >
+                Sign out
+              </button>
+            </div>
+          ) : (
+            <>
+              <Link
+                to="/signin"
+                className="text-[13px] font-medium text-[#42504e] hover:text-[#0d3d3a] px-2.5 py-1.5 rounded-md transition-colors"
+              >
+                Sign in
+              </Link>
 
-          <Link
-            to="/signup"
-            className="bg-[#0d6b63] text-white text-[13px] font-semibold px-4 py-1.5 rounded-md hover:bg-[#0a534d] transition-colors shadow-sm"
-          >
-            Sign up
-          </Link>
+              <Link
+                to="/signup"
+                className="bg-[#0d6b63] text-white text-[13px] font-semibold px-4 py-1.5 rounded-md hover:bg-[#0a534d] transition-colors shadow-sm"
+              >
+                Sign up
+              </Link>
+            </>
+          )}
 
           {/* Mobile menu toggle */}
           <button
@@ -298,6 +338,41 @@ export const SiteHeader: React.FC<SiteHeaderProps> = ({ activeTab }) => {
           >
             Reviewer Console (Staff)
           </Link>
+
+          {currentUser ? (
+            <div className="pt-2 border-t border-[#e3ded4] flex items-center justify-between px-3 py-2 text-xs">
+              <span className="font-semibold text-[#0d3d3a] truncate mr-2">
+                {currentUser.name}
+              </span>
+              <button
+                type="button"
+                onClick={() => {
+                  handleSignOut();
+                  setMobileMenuOpen(false);
+                }}
+                className="text-[#991b1b] font-bold shrink-0"
+              >
+                Sign out
+              </button>
+            </div>
+          ) : (
+            <div className="pt-2 border-t border-[#e3ded4] flex items-center gap-2 px-3 py-2">
+              <Link
+                to="/signin"
+                onClick={() => setMobileMenuOpen(false)}
+                className="flex-1 py-1.5 text-center text-xs font-semibold text-[#0d3d3a] bg-white border border-[#e3ded4] rounded-md"
+              >
+                Sign in
+              </Link>
+              <Link
+                to="/signup"
+                onClick={() => setMobileMenuOpen(false)}
+                className="flex-1 py-1.5 text-center text-xs font-semibold text-white bg-[#0d6b63] rounded-md"
+              >
+                Sign up
+              </Link>
+            </div>
+          )}
         </div>
       )}
     </header>

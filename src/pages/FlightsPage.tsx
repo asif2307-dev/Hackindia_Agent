@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { SiteHeader } from '../components/layout/SiteHeader';
 import { SiteFooter } from '../components/layout/SiteFooter';
+import { useTravelBooking } from '../context/TravelBookingContext';
 
 interface FlightItem {
   id: string;
@@ -20,26 +21,81 @@ interface FlightItem {
   logo: string;
 }
 
-export const FlightsPage: React.FC = () => {
-  const navigate = useNavigate();
+const parseLocalDate = (isoStr: string) => {
+  if (!isoStr) return new Date(2026, 11, 21);
+  const parts = isoStr.split('-').map(Number);
+  if (parts.length === 3 && !isNaN(parts[0]) && !isNaN(parts[1]) && !isNaN(parts[2])) {
+    return new Date(parts[0], parts[1] - 1, parts[2]);
+  }
+  const d = new Date(isoStr);
+  return isNaN(d.getTime()) ? new Date(2026, 11, 21) : d;
+};
 
-  // Selected date in carousel
-  const [selectedDate, setSelectedDate] = useState('Sat, 24 Oct');
+const formatLocalYMD = (d: Date) => {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+};
+
+export const FlightsPage: React.FC = () => {
+  const { searchCriteria, setSearchCriteria, openBookingSummary, bookingSuccessAlert, clearBookingSuccessAlert } = useTravelBooking();
+
+  const origin = searchCriteria.origin || 'Delhi (DEL)';
+  const destination = searchCriteria.destination || 'Mumbai (BOM)';
+  const departDate = searchCriteria.departDate || '2026-12-21';
+  const passengers = searchCriteria.passengers || '1 traveller · Economy';
 
   // Filters state
   const [selectedStops, setSelectedStops] = useState<string[]>(['nonstop']);
   const [selectedAirlines, setSelectedAirlines] = useState<string[]>([]);
-  const [bookedFlight, setBookedFlight] = useState<string | null>(null);
 
-  const dates = [
-    { day: 'Wed, 21 Oct', price: '₹ 5,420' },
-    { day: 'Thu, 22 Oct', price: '₹ 5,190' },
-    { day: 'Fri, 23 Oct', price: '₹ 6,340' },
-    { day: 'Sat, 24 Oct', price: '₹ 4,872', isRecommended: true },
-    { day: 'Sun, 25 Oct', price: '₹ 5,100' },
-    { day: 'Mon, 26 Oct', price: '₹ 4,950' },
-    { day: 'Tue, 27 Oct', price: '₹ 5,280' },
-  ];
+  // Inline Modify Search State
+  const [isModifyOpen, setIsModifyOpen] = useState(false);
+  const [modOrigin, setModOrigin] = useState(origin);
+  const [modDestination, setModDestination] = useState(destination);
+  const [modDate, setModDate] = useState(departDate);
+  const [modPassengers, setModPassengers] = useState(passengers);
+  const [modifyError, setModifyError] = useState<string | null>(null);
+
+  // Parse numeric passenger count
+  const parsePassengerCount = (pStr: string) => {
+    const match = pStr.match(/(\d+)/);
+    return match ? Math.max(1, parseInt(match[1], 10)) : 1;
+  };
+  const passengerCount = parsePassengerCount(passengers);
+
+  // Generate 7-day date window starting on departDate through departDate + 7 days (8 dates spanning 7-day interval)
+  const generateDates = (startIso: string) => {
+    const startDate = parseLocalDate(startIso);
+    const list = [];
+    const basePrices = [4872, 5100, 4950, 5280, 5420, 5190, 6340, 5150];
+
+    for (let i = 0; i <= 7; i++) {
+      const d = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate() + i);
+      const iso = formatLocalYMD(d);
+      const dayLabel = d.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
+      list.push({
+        iso,
+        day: dayLabel,
+        price: `₹ ${(basePrices[i % basePrices.length]).toLocaleString('en-IN')}`,
+        rawPrice: basePrices[i % basePrices.length],
+        isInitial: i === 0,
+      });
+    }
+    return list;
+  };
+
+  const dates = generateDates(departDate);
+
+  const parsedActiveDate = parseLocalDate(departDate);
+  const displayDateFormatted = !isNaN(parsedActiveDate.getTime())
+    ? parsedActiveDate.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })
+    : departDate;
+
+  // Find base fare for currently selected date from date window
+  const activeDateEntry = dates.find((d) => d.iso === departDate) || dates[0];
+  const activeBasePrice = activeDateEntry ? activeDateEntry.rawPrice : 4872;
 
   const flights: FlightItem[] = [
     {
@@ -49,12 +105,12 @@ export const FlightsPage: React.FC = () => {
       flightNo: 'AI-805',
       fromTime: '06:10',
       toTime: '08:25',
-      fromCode: 'DEL',
-      toCode: 'BOM',
+      fromCode: origin.includes('(') ? origin.split('(')[1].replace(')', '') : 'DEL',
+      toCode: destination.includes('(') ? destination.split('(')[1].replace(')', '') : 'BOM',
       duration: '2h 15m',
       stops: 'Non-stop',
-      price: 4872,
-      priceFormatted: '₹ 4,872',
+      price: activeBasePrice,
+      priceFormatted: `₹ ${activeBasePrice.toLocaleString('en-IN')}`,
       refundable: true,
       logo: 'flight_takeoff',
     },
@@ -65,12 +121,12 @@ export const FlightsPage: React.FC = () => {
       flightNo: '6E-2134',
       fromTime: '08:30',
       toTime: '10:40',
-      fromCode: 'DEL',
-      toCode: 'BOM',
+      fromCode: origin.includes('(') ? origin.split('(')[1].replace(')', '') : 'DEL',
+      toCode: destination.includes('(') ? destination.split('(')[1].replace(')', '') : 'BOM',
       duration: '2h 10m',
       stops: 'Non-stop',
-      price: 5120,
-      priceFormatted: '₹ 5,120',
+      price: activeBasePrice + 248,
+      priceFormatted: `₹ ${(activeBasePrice + 248).toLocaleString('en-IN')}`,
       refundable: true,
       logo: 'flight_takeoff',
     },
@@ -81,12 +137,12 @@ export const FlightsPage: React.FC = () => {
       flightNo: 'UK-995',
       fromTime: '10:20',
       toTime: '12:35',
-      fromCode: 'DEL',
-      toCode: 'BOM',
+      fromCode: origin.includes('(') ? origin.split('(')[1].replace(')', '') : 'DEL',
+      toCode: destination.includes('(') ? destination.split('(')[1].replace(')', '') : 'BOM',
       duration: '2h 15m',
       stops: 'Non-stop',
-      price: 6450,
-      priceFormatted: '₹ 6,450',
+      price: activeBasePrice + 1578,
+      priceFormatted: `₹ ${(activeBasePrice + 1578).toLocaleString('en-IN')}`,
       refundable: true,
       logo: 'flight_takeoff',
     },
@@ -97,12 +153,12 @@ export const FlightsPage: React.FC = () => {
       flightNo: 'QP-1102',
       fromTime: '14:15',
       toTime: '16:35',
-      fromCode: 'DEL',
-      toCode: 'BOM',
+      fromCode: origin.includes('(') ? origin.split('(')[1].replace(')', '') : 'DEL',
+      toCode: destination.includes('(') ? destination.split('(')[1].replace(')', '') : 'BOM',
       duration: '2h 20m',
       stops: 'Non-stop',
-      price: 4910,
-      priceFormatted: '₹ 4,910',
+      price: activeBasePrice + 38,
+      priceFormatted: `₹ ${(activeBasePrice + 38).toLocaleString('en-IN')}`,
       refundable: true,
       logo: 'flight_takeoff',
     },
@@ -113,12 +169,12 @@ export const FlightsPage: React.FC = () => {
       flightNo: '6E-5321',
       fromTime: '17:45',
       toTime: '20:00',
-      fromCode: 'DEL',
-      toCode: 'BOM',
+      fromCode: origin.includes('(') ? origin.split('(')[1].replace(')', '') : 'DEL',
+      toCode: destination.includes('(') ? destination.split('(')[1].replace(')', '') : 'BOM',
       duration: '2h 15m',
       stops: 'Non-stop',
-      price: 5490,
-      priceFormatted: '₹ 5,490',
+      price: activeBasePrice + 618,
+      priceFormatted: `₹ ${(activeBasePrice + 618).toLocaleString('en-IN')}`,
       refundable: true,
       logo: 'flight_takeoff',
     },
@@ -130,16 +186,82 @@ export const FlightsPage: React.FC = () => {
     );
   };
 
+  const toggleStop = (stop: string) => {
+    setSelectedStops((prev) =>
+      prev.includes(stop) ? prev.filter((s) => s !== stop) : [...prev, stop]
+    );
+  };
+
   const handleBook = (flight: FlightItem) => {
-    setBookedFlight(flight.flightNo);
-    setTimeout(() => {
-      navigate('/bookings');
-    }, 1200);
+    const totalFare = flight.price * passengerCount;
+    openBookingSummary({
+      id: flight.id,
+      serviceType: 'flights',
+      title: `${flight.airline} · ${flight.flightNo}`,
+      operator: flight.airline,
+      code: flight.flightNo,
+      route: `${origin} → ${destination}`,
+      origin,
+      destination,
+      departDate,
+      departTime: flight.fromTime,
+      arriveTime: flight.toTime,
+      duration: flight.duration,
+      travelClass: searchCriteria.travelClass || 'Economy',
+      passengers,
+      passengerCount,
+      baseRatePerUnit: flight.price,
+      taxAmount: Math.round(totalFare * 0.12),
+      fareFormatted: `₹ ${totalFare.toLocaleString('en-IN')}`,
+      fareAmount: totalFare,
+      refundable: flight.refundable,
+      notes: `${flight.stops} · ${displayDateFormatted} · Departure confirmed`,
+    });
+  };
+
+  const handleSwapModify = () => {
+    const temp = modOrigin;
+    setModOrigin(modDestination);
+    setModDestination(temp);
+    setModifyError(null);
+  };
+
+  const handleApplyModify = (e: React.FormEvent) => {
+    e.preventDefault();
+    const o = modOrigin.trim();
+    const d = modDestination.trim();
+    if (!o || !d) {
+      setModifyError('Please specify both origin and destination.');
+      return;
+    }
+    if (o.toLowerCase() === d.toLowerCase()) {
+      setModifyError('Origin and destination cannot be the same city.');
+      return;
+    }
+    if (!modDate) {
+      setModifyError('Please select a departure date.');
+      return;
+    }
+    setModifyError(null);
+    setSearchCriteria({
+      origin: o,
+      destination: d,
+      departDate: modDate,
+      passengers: modPassengers,
+    });
+    setIsModifyOpen(false);
   };
 
   const filteredFlights = flights.filter((f) => {
     if (selectedAirlines.length > 0 && !selectedAirlines.includes(f.airline)) {
       return false;
+    }
+    if (selectedStops.length > 0) {
+      const isNonStop = f.stops.toLowerCase().includes('non-stop');
+      const hasNonStop = selectedStops.includes('nonstop');
+      const has1Stop = selectedStops.includes('1stop');
+      if (hasNonStop && !has1Stop && !isNonStop) return false;
+      if (has1Stop && !hasNonStop && isNonStop) return false;
     }
     return true;
   });
@@ -148,10 +270,15 @@ export const FlightsPage: React.FC = () => {
     <div className="min-h-screen bg-[#f7f4ed] flex flex-col font-sans text-[#192524] antialiased">
       <SiteHeader activeTab="flights" />
 
-      {bookedFlight && (
-        <div className="fixed top-20 right-6 z-50 p-4 rounded-xl bg-[#0d6b63] text-white font-semibold shadow-xl flex items-center gap-2 text-sm animate-fade-in">
-          <span className="material-symbols-outlined text-[20px]">check_circle</span>
-          <span>Flight {bookedFlight} added to your bookings with AI refund tracking enabled!</span>
+      {bookingSuccessAlert && (
+        <div className="fixed top-20 right-6 z-50 p-4 rounded-xl bg-[#0d6b63] text-white font-semibold shadow-xl flex items-center justify-between gap-3 text-sm animate-fade-in max-w-md">
+          <div className="flex items-center gap-2">
+            <span className="material-symbols-outlined text-[20px]">check_circle</span>
+            <span>{bookingSuccessAlert}</span>
+          </div>
+          <button onClick={clearBookingSuccessAlert} className="text-white/80 hover:text-white cursor-pointer">
+            <span className="material-symbols-outlined text-[16px]">close</span>
+          </button>
         </div>
       )}
 
@@ -162,43 +289,180 @@ export const FlightsPage: React.FC = () => {
           <span>›</span>
           <span className="hover:text-[#0d3d3a]">Flights</span>
           <span>›</span>
-          <span className="text-[#0d3d3a] font-medium">Delhi to Mumbai</span>
+          <span className="text-[#0d3d3a] font-medium">{origin} to {destination}</span>
         </div>
 
         {/* Header Strip & Modify Search */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-[#e3ded4] gap-3">
           <div>
             <h1 className="text-2xl sm:text-3xl font-bold text-[#0d3d3a] tracking-tight">
-              Flights from Delhi to Mumbai
+              Flights from {origin} to {destination}
             </h1>
             <p className="text-xs sm:text-sm text-[#5c6967] mt-0.5">
-              Sat, 24 Oct 2026 · 1 traveller · Economy · {filteredFlights.length} flights found
+              {displayDateFormatted} · {passengers} · {filteredFlights.length} flight{filteredFlights.length !== 1 ? 's' : ''} found
             </p>
           </div>
 
           <button
-            onClick={() => navigate('/')}
-            className="self-start sm:self-auto border border-[#0d6b63] text-[#0d6b63] bg-white px-3.5 py-1.5 rounded-md text-xs font-semibold hover:bg-[#e8f2f0] transition-colors"
+            type="button"
+            onClick={() => {
+              setIsModifyOpen(!isModifyOpen);
+              setModOrigin(origin);
+              setModDestination(destination);
+              setModDate(departDate);
+              setModPassengers(passengers);
+              setModifyError(null);
+            }}
+            className="self-start sm:self-auto border border-[#0d6b63] text-[#0d6b63] bg-white px-3.5 py-1.5 rounded-md text-xs font-semibold hover:bg-[#e8f2f0] transition-colors cursor-pointer flex items-center gap-1.5"
           >
-            Modify search
+            <span className="material-symbols-outlined text-[16px]">
+              {isModifyOpen ? 'close' : 'tune'}
+            </span>
+            <span>{isModifyOpen ? 'Close modify' : 'Modify search'}</span>
           </button>
         </div>
+
+        {/* Inline Modify Search Drawer */}
+        {isModifyOpen && (
+          <form
+            onSubmit={handleApplyModify}
+            className="my-4 p-4 sm:p-5 bg-white rounded-xl border border-[#0d6b63]/30 shadow-md animate-fade-in text-left space-y-4"
+          >
+            <div className="flex items-center justify-between pb-2 border-b border-[#e3ded4]">
+              <span className="text-xs font-bold uppercase tracking-wider text-[#0d3d3a] flex items-center gap-1.5">
+                <span className="material-symbols-outlined text-[16px] text-[#0d6b63]">search</span>
+                Modify Flight Criteria
+              </span>
+              <span className="text-[11px] text-[#889593]">
+                Changes instantly update availability and fare window
+              </span>
+            </div>
+
+            {modifyError && (
+              <div className="p-3 bg-red-50 border border-red-200 text-red-700 rounded-lg text-xs flex items-center gap-2">
+                <span className="material-symbols-outlined text-[16px]">warning</span>
+                <span>{modifyError}</span>
+              </div>
+            )}
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-3 items-end">
+              {/* Origin */}
+              <div className="lg:col-span-3">
+                <label className="text-[11px] font-bold text-[#5c6967] block uppercase mb-1">
+                  From (Origin)
+                </label>
+                <input
+                  type="text"
+                  value={modOrigin}
+                  onChange={(e) => {
+                    setModOrigin(e.target.value);
+                    setModifyError(null);
+                  }}
+                  className="w-full px-3 py-2 text-xs border border-[#e3ded4] rounded-lg focus:outline-none focus:border-[#0d6b63] bg-[#fbf9f4]"
+                  placeholder="e.g. Delhi (DEL)"
+                />
+              </div>
+
+              {/* Swap Button */}
+              <div className="lg:col-span-1 flex justify-center pb-0.5">
+                <button
+                  type="button"
+                  onClick={handleSwapModify}
+                  title="Swap Origin and Destination"
+                  className="w-8 h-8 rounded-full border border-[#e3ded4] bg-white hover:bg-[#e8f2f0] text-[#0d6b63] flex items-center justify-center transition-transform hover:rotate-180 cursor-pointer"
+                >
+                  <span className="material-symbols-outlined text-[18px]">swap_horiz</span>
+                </button>
+              </div>
+
+              {/* Destination */}
+              <div className="lg:col-span-3">
+                <label className="text-[11px] font-bold text-[#5c6967] block uppercase mb-1">
+                  To (Destination)
+                </label>
+                <input
+                  type="text"
+                  value={modDestination}
+                  onChange={(e) => {
+                    setModDestination(e.target.value);
+                    setModifyError(null);
+                  }}
+                  className="w-full px-3 py-2 text-xs border border-[#e3ded4] rounded-lg focus:outline-none focus:border-[#0d6b63] bg-[#fbf9f4]"
+                  placeholder="e.g. Mumbai (BOM)"
+                />
+              </div>
+
+              {/* Departure Date */}
+              <div className="lg:col-span-2">
+                <label className="text-[11px] font-bold text-[#5c6967] block uppercase mb-1">
+                  Departure Date
+                </label>
+                <input
+                  type="date"
+                  value={modDate}
+                  onChange={(e) => {
+                    setModDate(e.target.value);
+                    setModifyError(null);
+                  }}
+                  className="w-full px-3 py-2 text-xs border border-[#e3ded4] rounded-lg focus:outline-none focus:border-[#0d6b63] bg-[#fbf9f4]"
+                />
+              </div>
+
+              {/* Passengers */}
+              <div className="lg:col-span-3">
+                <label className="text-[11px] font-bold text-[#5c6967] block uppercase mb-1">
+                  Travellers & Cabin
+                </label>
+                <select
+                  value={modPassengers}
+                  onChange={(e) => setModPassengers(e.target.value)}
+                  className="w-full px-3 py-2 text-xs border border-[#e3ded4] rounded-lg focus:outline-none focus:border-[#0d6b63] bg-[#fbf9f4]"
+                >
+                  <option value="1 traveller · Economy">1 traveller · Economy</option>
+                  <option value="2 travellers · Economy">2 travellers · Economy</option>
+                  <option value="3 travellers · Economy">3 travellers · Economy</option>
+                  <option value="4 travellers · Economy">4 travellers · Economy</option>
+                  <option value="1 traveller · Business">1 traveller · Business</option>
+                  <option value="2 travellers · Business">2 travellers · Business</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-[#e3ded4]">
+              <button
+                type="button"
+                onClick={() => setIsModifyOpen(false)}
+                className="px-3.5 py-1.5 text-xs text-[#5c6967] hover:text-[#0d3d3a] hover:bg-[#f0ebe1] rounded-md transition-colors cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                className="px-4 py-1.5 text-xs font-semibold bg-[#0d6b63] text-white hover:bg-[#0a534d] rounded-md transition-colors cursor-pointer flex items-center gap-1.5 shadow-sm"
+              >
+                <span className="material-symbols-outlined text-[15px]">check</span>
+                <span>Update Results</span>
+              </button>
+            </div>
+          </form>
+        )}
 
         {/* Date Strip Carousel */}
         <div className="py-4 border-b border-[#e3ded4] overflow-x-auto">
           <div className="flex items-center gap-2 min-w-max">
             {dates.map((d) => (
               <button
-                key={d.day}
-                onClick={() => setSelectedDate(d.day)}
-                className={`px-4 py-2.5 rounded-lg border text-xs font-medium transition-all text-center min-w-[120px] ${
-                  selectedDate === d.day
-                    ? 'border-[#0d6b63] bg-white text-[#0d3d3a] shadow-sm ring-1 ring-[#0d6b63]'
+                key={d.iso}
+                type="button"
+                onClick={() => setSearchCriteria({ departDate: d.iso })}
+                className={`px-4 py-2.5 rounded-lg border text-xs font-medium transition-all text-center min-w-[120px] cursor-pointer ${
+                  departDate === d.iso
+                    ? 'border-[#0d6b63] bg-white text-[#0d3d3a] shadow-sm ring-2 ring-[#0d6b63]'
                     : 'border-[#e3ded4] bg-white/70 text-[#6b7775] hover:bg-white hover:text-[#0d3d3a]'
                 }`}
               >
                 <div className="font-semibold">{d.day}</div>
-                <div className={`mt-0.5 text-xs ${selectedDate === d.day ? 'text-[#0d6b63] font-bold' : 'text-[#889593]'}`}>
+                <div className={`mt-0.5 text-xs ${departDate === d.iso ? 'text-[#0d6b63] font-bold' : 'text-[#889593]'}`}>
                   {d.price}
                 </div>
               </button>
@@ -214,11 +478,12 @@ export const FlightsPage: React.FC = () => {
               <div className="flex items-center justify-between pb-3 border-b border-[#e3ded4]">
                 <h3 className="text-sm font-bold text-[#0d3d3a]">Filters</h3>
                 <button
+                  type="button"
                   onClick={() => {
                     setSelectedAirlines([]);
                     setSelectedStops(['nonstop']);
                   }}
-                  className="text-xs text-[#0d6b63] hover:underline font-medium"
+                  className="text-xs text-[#0d6b63] hover:underline font-medium cursor-pointer"
                 >
                   Clear all
                 </button>
@@ -233,13 +498,18 @@ export const FlightsPage: React.FC = () => {
                   <input
                     type="checkbox"
                     checked={selectedStops.includes('nonstop')}
-                    onChange={() => {}}
+                    onChange={() => toggleStop('nonstop')}
                     className="accent-[#0d6b63] rounded"
                   />
                   <span>Non-stop (82)</span>
                 </label>
                 <label className="flex items-center gap-2 text-xs text-[#42504e] cursor-pointer">
-                  <input type="checkbox" className="accent-[#0d6b63] rounded" />
+                  <input
+                    type="checkbox"
+                    checked={selectedStops.includes('1stop')}
+                    onChange={() => toggleStop('1stop')}
+                    className="accent-[#0d6b63] rounded"
+                  />
                   <span>1 stop (124)</span>
                 </label>
               </div>
@@ -281,61 +551,91 @@ export const FlightsPage: React.FC = () => {
 
           {/* Right Flight Results Column */}
           <div className="lg:col-span-9 space-y-4">
-            {filteredFlights.map((flight) => (
-              <div
-                key={flight.id}
-                className="bg-white rounded-xl border border-[#e3ded4] p-5 shadow-sm hover:border-[#0d6b63]/60 transition-all space-y-4"
-              >
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                  {/* Airline & Timings */}
-                  <div className="flex items-center gap-4">
-                    <div className="w-10 h-10 rounded-lg bg-[#f0ebe1] flex items-center justify-center text-[#0d3d3a] font-bold text-xs border border-[#e3ded4]">
-                      {flight.code}
-                    </div>
-                    <div>
-                      <h4 className="font-bold text-[#0d3d3a] text-sm">
-                        {flight.airline} · {flight.flightNo}
-                      </h4>
-                      <div className="flex items-center gap-2 text-xs text-[#6b7775] mt-0.5">
-                        <span className="font-semibold text-[#0d3d3a]">{flight.fromTime}</span>
-                        <span>{flight.fromCode}</span>
-                        <span className="text-[#889593]">→ {flight.duration} ({flight.stops}) →</span>
-                        <span className="font-semibold text-[#0d3d3a]">{flight.toTime}</span>
-                        <span>{flight.toCode}</span>
+            {filteredFlights.length === 0 ? (
+              <div className="bg-white rounded-xl border border-[#e3ded4] p-10 text-center space-y-3 shadow-sm">
+                <span className="material-symbols-outlined text-[42px] text-[#889593]">flight_takeoff</span>
+                <h3 className="font-bold text-[#0d3d3a] text-base">No flights match your filter criteria</h3>
+                <p className="text-xs text-[#6b7775] max-w-md mx-auto">
+                  We couldn't find flights matching your selected stop or airline filters for {origin} → {destination} on {displayDateFormatted}.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedAirlines([]);
+                    setSelectedStops(['nonstop', '1stop']);
+                  }}
+                  className="px-4 py-2 bg-[#0d6b63] text-white rounded-md text-xs font-semibold hover:bg-[#0a534d] transition-colors cursor-pointer shadow-sm"
+                >
+                  Reset all filters
+                </button>
+              </div>
+            ) : (
+              filteredFlights.map((flight) => (
+                <div
+                  key={flight.id}
+                  className="bg-white rounded-xl border border-[#e3ded4] p-5 shadow-sm hover:border-[#0d6b63]/60 transition-all space-y-4"
+                >
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    {/* Airline & Timings */}
+                    <div className="flex items-center gap-4">
+                      <div className="w-10 h-10 rounded-lg bg-[#f0ebe1] flex items-center justify-center text-[#0d3d3a] font-bold text-xs border border-[#e3ded4]">
+                        {flight.code}
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <h4 className="font-bold text-[#0d3d3a] text-sm">
+                            {flight.airline} · {flight.flightNo}
+                          </h4>
+                          <span className="text-[10px] font-semibold text-[#0d6b63] bg-[#e8f2f0] px-2 py-0.5 rounded-full">
+                            Departs {displayDateFormatted}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2 text-xs text-[#6b7775] mt-1">
+                          <span className="font-semibold text-[#0d3d3a]">{flight.fromTime}</span>
+                          <span>{flight.fromCode}</span>
+                          <span className="text-[#889593]">→ {flight.duration} ({flight.stops}) →</span>
+                          <span className="font-semibold text-[#0d3d3a]">{flight.toTime}</span>
+                          <span>{flight.toCode}</span>
+                        </div>
                       </div>
                     </div>
-                  </div>
 
-                  {/* Price & Action Button */}
-                  <div className="flex sm:flex-col items-center sm:items-end justify-between sm:justify-center border-t sm:border-t-0 pt-3 sm:pt-0 border-[#e3ded4] gap-2">
-                    <div className="text-right">
-                      <span className="text-xl font-bold text-[#0d3d3a] leading-none block">
-                        {flight.priceFormatted}
-                      </span>
-                      <span className="text-[11px] text-[#889593]">per traveller</span>
+                    {/* Price & Action Button */}
+                    <div className="flex sm:flex-col items-center sm:items-end justify-between sm:justify-center border-t sm:border-t-0 pt-3 sm:pt-0 border-[#e3ded4] gap-2">
+                      <div className="text-right">
+                        <span className="text-xl font-bold text-[#0d3d3a] leading-none block">
+                          {flight.priceFormatted}
+                        </span>
+                        <span className="text-[11px] text-[#889593]">per traveller</span>
+                        {passengerCount > 1 && (
+                          <span className="text-[11px] font-semibold text-[#0d6b63] block mt-0.5">
+                            Total: ₹ {(flight.price * passengerCount).toLocaleString('en-IN')} ({passengerCount} travellers)
+                          </span>
+                        )}
+                      </div>
+
+                      <button
+                        onClick={() => handleBook(flight)}
+                        className="bg-[#0d6b63] text-white px-5 py-2 rounded-md text-xs font-semibold hover:bg-[#0a534d] transition-colors shadow-sm cursor-pointer"
+                      >
+                        Book flight
+                      </button>
                     </div>
+                  </div>
 
-                    <button
-                      onClick={() => handleBook(flight)}
-                      className="bg-[#0d6b63] text-white px-5 py-2 rounded-md text-xs font-semibold hover:bg-[#0a534d] transition-colors shadow-sm"
-                    >
-                      Book flight
-                    </button>
+                  {/* Footer Strip with Refund Assurance */}
+                  <div className="pt-2 border-t border-[#f0ebe1] flex flex-wrap items-center justify-between gap-2 text-xs">
+                    <div className="flex items-center gap-1.5 text-[#0d6b63] font-semibold text-[11px] bg-[#e8f2f0] px-2.5 py-0.5 rounded-full">
+                      <span className="w-1.5 h-1.5 rounded-full bg-[#0d6b63]"></span>
+                      Eligible for refund assistance
+                    </div>
+                    <span className="text-[#889593] text-[11px]">
+                      Free cancellation before departure · Tracked 24/7 by AI
+                    </span>
                   </div>
                 </div>
-
-                {/* Footer Strip with Refund Assurance */}
-                <div className="pt-2 border-t border-[#f0ebe1] flex flex-wrap items-center justify-between gap-2 text-xs">
-                  <div className="flex items-center gap-1.5 text-[#0d6b63] font-semibold text-[11px] bg-[#e8f2f0] px-2.5 py-0.5 rounded-full">
-                    <span className="w-1.5 h-1.5 rounded-full bg-[#0d6b63]"></span>
-                    Eligible for refund assistance
-                  </div>
-                  <span className="text-[#889593] text-[11px]">
-                    Free cancellation before 22 Oct · Flight ops tracked 24/7
-                  </span>
-                </div>
-              </div>
-            ))}
+              ))
+            )}
           </div>
         </div>
       </main>

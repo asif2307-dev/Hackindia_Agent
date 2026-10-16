@@ -1,7 +1,9 @@
 import React from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { LanguageProvider } from './context/LanguageContext';
 import { InvestigationProvider } from './context/InvestigationContext';
+import { TravelBookingProvider } from './context/TravelBookingContext';
+import { BookingSummaryModal } from './components/travel/BookingSummaryModal';
 import { ScrollToTop } from './components/common/ScrollToTop';
 
 // Traveller Pages (Mockup Pages 1-10, 13-21)
@@ -21,6 +23,7 @@ import { HelpPage } from './pages/HelpPage';
 import { SettingsPage } from './pages/SettingsPage';
 import { SignInPage } from './pages/SignInPage';
 import { SignUpPage } from './pages/SignUpPage';
+import { NotFoundPage } from './pages/NotFoundPage';
 
 // Internal Reviewer Console Pages (Mockup Pages 11 & 12)
 import { HumanReviewPage } from './pages/HumanReviewPage';
@@ -32,48 +35,51 @@ export const App: React.FC = () => {
   return (
     <LanguageProvider>
       <InvestigationProvider>
-        <BrowserRouter>
-          <ScrollToTop />
-          <Routes>
-            {/* Traveller Public Flow (PDF Mockups: Pages 1-10, 13-21) */}
-            <Route path="/" element={<LandingPage />} />
-            <Route path="/flights" element={<FlightsPage />} />
-            <Route path="/destinations" element={<DestinationsPage />} />
-            <Route path="/offers" element={<OffersPage />} />
-            <Route path="/bookings" element={<BookingsPage />} />
-            <Route path="/refunds" element={<RefundCenterPage />} />
-            <Route path="/refunds/:id" element={<CaseDetailPage />} />
-            <Route path="/refund-investigations/:id" element={<CaseDetailPage />} />
-            <Route path="/hotels" element={<HotelsPage />} />
-            <Route path="/trains" element={<TrainsPage />} />
-            <Route path="/buses" element={<BusesPage />} />
-            <Route path="/cabs" element={<CabsPage />} />
-            <Route path="/holidays" element={<HolidaysPage />} />
-            <Route path="/help" element={<HelpPage />} />
-            <Route path="/account" element={<SettingsPage />} />
-            <Route path="/settings" element={<SettingsPage />} />
-            <Route path="/signin" element={<SignInPage />} />
-            <Route path="/signup" element={<SignUpPage />} />
+        <TravelBookingProvider>
+          <BrowserRouter>
+            <ScrollToTop />
+            <BookingSummaryModal />
+            <Routes>
+              {/* Traveller Public Flow (PDF Mockups: Pages 1-10, 13-21) */}
+              <Route path="/" element={<LandingPage />} />
+              <Route path="/flights" element={<FlightsPage />} />
+              <Route path="/destinations" element={<DestinationsPage />} />
+              <Route path="/offers" element={<OffersPage />} />
+              <Route path="/bookings" element={<BookingsPage />} />
+              <Route path="/refunds" element={<RefundCenterPage />} />
+              <Route path="/refunds/:id" element={<CaseDetailPage />} />
+              <Route path="/refund-investigations/:id" element={<CaseDetailPage />} />
+              <Route path="/hotels" element={<HotelsPage />} />
+              <Route path="/trains" element={<TrainsPage />} />
+              <Route path="/buses" element={<BusesPage />} />
+              <Route path="/cabs" element={<CabsPage />} />
+              <Route path="/holidays" element={<HolidaysPage />} />
+              <Route path="/help" element={<HelpPage />} />
+              <Route path="/account" element={<SettingsPage />} />
+              <Route path="/settings" element={<SettingsPage />} />
+              <Route path="/signin" element={<SignInPage />} />
+              <Route path="/signup" element={<SignUpPage />} />
 
-            {/* Internal Reviewer Console (PDF Mockups: Pages 11 & 12) */}
-            <Route path="/reviewer" element={<HumanReviewPage />} />
-            <Route path="/reviewer/queue" element={<HumanReviewPage />} />
-            <Route path="/reviewer/cases" element={<RefundInvestigationsPage />} />
-            <Route path="/reviewer/analytics" element={<AnalyticsPage />} />
-            <Route path="/reviewer/audit" element={<DashboardPage />} />
-            <Route path="/reviewer/settings" element={<SettingsPage />} />
+              {/* Internal Reviewer Console (PDF Mockups: Pages 11 & 12) */}
+              <Route path="/reviewer" element={<HumanReviewPage />} />
+              <Route path="/reviewer/queue" element={<HumanReviewPage />} />
+              <Route path="/reviewer/cases" element={<RefundInvestigationsPage />} />
+              <Route path="/reviewer/analytics" element={<AnalyticsPage />} />
+              <Route path="/reviewer/audit" element={<DashboardPage />} />
+              <Route path="/reviewer/settings" element={<SettingsPage />} />
 
-            {/* Backwards-compatible routes for internal operations */}
-            <Route path="/reviews" element={<HumanReviewPage />} />
-            <Route path="/analytics" element={<AnalyticsPage />} />
-            <Route path="/refund-investigations" element={<RefundInvestigationsPage />} />
-            <Route path="/dashboard" element={<DashboardPage />} />
-            <Route path="/overview" element={<DashboardPage />} />
+              {/* Backwards-compatible routes for internal operations */}
+              <Route path="/reviews" element={<HumanReviewPage />} />
+              <Route path="/analytics" element={<AnalyticsPage />} />
+              <Route path="/refund-investigations" element={<RefundInvestigationsPage />} />
+              <Route path="/dashboard" element={<DashboardPage />} />
+              <Route path="/overview" element={<DashboardPage />} />
 
-            {/* Catch-all redirect */}
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </Routes>
-        </BrowserRouter>
+              {/* 404 Fallback Route */}
+              <Route path="*" element={<NotFoundPage />} />
+            </Routes>
+          </BrowserRouter>
+        </TravelBookingProvider>
       </InvestigationProvider>
     </LanguageProvider>
   );

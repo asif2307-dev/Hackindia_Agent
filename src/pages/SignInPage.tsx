@@ -11,6 +11,17 @@ export const SignInPage: React.FC = () => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    const displayName = emailOrPhone.includes('@') ? emailOrPhone.split('@')[0] : 'Aarav Sharma';
+    const formattedName = displayName.charAt(0).toUpperCase() + displayName.slice(1);
+    sessionStorage.setItem(
+      'agent_travel_user',
+      JSON.stringify({
+        name: formattedName,
+        email: emailOrPhone,
+        signedIn: true,
+        timestamp: new Date().toISOString(),
+      })
+    );
     navigate('/bookings');
   };
 

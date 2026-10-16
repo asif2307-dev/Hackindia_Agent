@@ -2,11 +2,16 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { SiteHeader } from '../components/layout/SiteHeader';
 import { SiteFooter } from '../components/layout/SiteFooter';
+import { useInvestigation } from '../context/InvestigationContext';
+import { useTravelBooking } from '../context/TravelBookingContext';
 
 type ModeType = 'Flight' | 'Hotel' | 'Train' | 'Bus' | 'Cab';
 
 export const RefundCenterPage: React.FC = () => {
   const navigate = useNavigate();
+  const { cases } = useInvestigation();
+  const { userBookings } = useTravelBooking();
+
   const [activeTab, setActiveTab] = useState<'eligibility' | 'track'>('eligibility');
   const [bookingType, setBookingType] = useState<ModeType>('Flight');
   const [pnr, setPnr] = useState('ABC123');
@@ -14,19 +19,47 @@ export const RefundCenterPage: React.FC = () => {
   const [trackCaseId, setTrackCaseId] = useState('RF12345');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
 
+  const previewCase = cases.find((c) => c.id === 'AT-9842') || cases[0];
+
   const handleSubmitEligibility = (e: React.FormEvent) => {
     e.preventDefault();
     setIsAnalyzing(true);
     setTimeout(() => {
       setIsAnalyzing(false);
-      navigate('/refunds/RF12345');
-    }, 1500);
+      const cleanPnr = pnr.trim().toLowerCase();
+      const matchedCase = cases.find(
+        (c) =>
+          c.pnr.toLowerCase() === cleanPnr ||
+          c.id.toLowerCase() === cleanPnr ||
+          c.caseRef.replace('#', '').toLowerCase() === cleanPnr
+      );
+      if (matchedCase) {
+        navigate(`/refunds/${matchedCase.id}`);
+        return;
+      }
+      const matchedBooking = userBookings.find(
+        (b) =>
+          b.refLabel.toLowerCase().includes(cleanPnr) ||
+          b.id.toLowerCase() === cleanPnr
+      );
+      if (matchedBooking && matchedBooking.refundCaseId) {
+        navigate(`/refunds/${matchedBooking.refundCaseId}`);
+        return;
+      }
+      navigate(`/refunds/${pnr.trim().replace('#', '') || 'RF12345'}`);
+    }, 1200);
   };
 
   const handleTrackSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const cleanId = trackCaseId.trim().replace('#', '') || 'RF12345';
-    navigate(`/refunds/${cleanId}`);
+    const cleanId = trackCaseId.trim().replace('#', '');
+    const matched = cases.find(
+      (c) =>
+        c.id.toLowerCase() === cleanId.toLowerCase() ||
+        c.caseRef.replace('#', '').toLowerCase() === cleanId.toLowerCase() ||
+        c.pnr.toLowerCase() === cleanId.toLowerCase()
+    );
+    navigate(`/refunds/${matched ? matched.id : cleanId || 'RF12345'}`);
   };
 
   return (
@@ -247,12 +280,18 @@ export const RefundCenterPage: React.FC = () => {
               <div className="flex items-center justify-between pb-3 border-b border-[#e3ded4]">
                 <div>
                   <h3 className="font-mono text-sm font-bold text-[#0d3d3a]">
-                    Case #RF12345
+                    Case #{previewCase.caseRef}
                   </h3>
-                  <span className="text-xs text-[#6b7775]">Delhi → Mumbai · 24 Oct 2026</span>
+                  <span className="text-xs text-[#6b7775]">{previewCase.carrier.route} · {previewCase.journeyDate}</span>
                 </div>
-                <span className="px-2.5 py-0.5 rounded-full bg-[#fef3c7] text-[#92400e] text-xs font-semibold border border-[#fde68a]">
-                  Under review
+                <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold border ${
+                  previewCase.decisionStatus === 'Ready for Payout' || previewCase.decisionStatus === 'Approved'
+                    ? 'bg-[#ecfdf5] text-[#166534] border-[#bbf7d0]'
+                    : previewCase.decisionStatus === 'Under Human Review'
+                    ? 'bg-[#fef3c7] text-[#92400e] border-[#fde68a]'
+                    : 'bg-[#e8f2f0] text-[#0d6b63] border-[#d0dfd3]'
+                }`}>
+                  {previewCase.decisionStatus}
                 </span>
               </div>
 
@@ -266,21 +305,21 @@ export const RefundCenterPage: React.FC = () => {
                 </div>
                 <div className="flex flex-col items-center gap-1">
                   <div className="w-5 h-5 rounded-full bg-[#0d6b63] text-white flex items-center justify-center font-bold text-[9px]">
-                    2
+                    ✓
                   </div>
                   <span className="font-bold text-[#0d6b63]">AI review</span>
                 </div>
                 <div className="flex flex-col items-center gap-1">
-                  <div className="w-5 h-5 rounded-full bg-[#f3eee5] text-[#889593] flex items-center justify-center font-bold text-[9px]">
+                  <div className="w-5 h-5 rounded-full bg-[#0d6b63] text-white flex items-center justify-center font-bold text-[9px]">
                     3
                   </div>
-                  <span className="text-[#889593]">Decision</span>
+                  <span className="font-bold text-[#0d6b63]">Decision</span>
                 </div>
                 <div className="flex flex-col items-center gap-1">
                   <div className="w-5 h-5 rounded-full bg-[#f3eee5] text-[#889593] flex items-center justify-center font-bold text-[9px]">
                     4
                   </div>
-                  <span className="text-[#889593]">Completed</span>
+                  <span className="text-[#889593]">Disbursement</span>
                 </div>
               </div>
 
@@ -288,21 +327,21 @@ export const RefundCenterPage: React.FC = () => {
               <div className="bg-[#fbf9f4] rounded-lg p-3.5 border border-[#e3ded4] space-y-2 text-xs">
                 <div className="flex items-center gap-2 text-[#0d3d3a]">
                   <span className="text-[#166534] font-bold">✓</span>
-                  <span>Booking details verified</span>
+                  <span>Booking details verified ({previewCase.traveler.name})</span>
                 </div>
                 <div className="flex items-center gap-2 text-[#0d3d3a]">
                   <span className="text-[#166534] font-bold">✓</span>
-                  <span>Cancellation notice found</span>
+                  <span>Carrier operational log verified ({previewCase.carrier.code})</span>
                 </div>
-                <div className="flex items-center gap-2 text-[#6b7775]">
-                  <span className="text-[#0d6b63] font-bold animate-pulse">…</span>
-                  <span>Policy check in progress</span>
+                <div className="flex items-center gap-2 text-[#0d3d3a]">
+                  <span className="text-[#166534] font-bold">✓</span>
+                  <span>Policy evaluated ({previewCase.evidenceStrength})</span>
                 </div>
               </div>
 
               <div className="pt-2 text-center">
                 <Link
-                  to="/refunds/RF12345"
+                  to={`/refunds/${previewCase.id}`}
                   className="text-xs font-semibold text-[#0d6b63] hover:underline"
                 >
                   View full case details →
@@ -310,7 +349,7 @@ export const RefundCenterPage: React.FC = () => {
               </div>
 
               <p className="text-[11px] text-[#889593] text-center border-t border-[#f0ebe1] pt-2">
-                Sample preview. The provider makes the final decision.
+                Real-time investigation dossier. The provider executes the final disbursement.
               </p>
             </div>
           </div>
@@ -381,62 +420,31 @@ export const RefundCenterPage: React.FC = () => {
             </div>
 
             <div className="space-y-3">
-              {/* Claim 1 */}
-              <div className="bg-white rounded-xl border border-[#e3ded4] p-4 shadow-sm flex items-center justify-between">
-                <div>
-                  <div className="flex items-center gap-2">
-                    <span className="font-mono text-xs font-bold text-[#0d3d3a]">Case #RF12345</span>
-                    <span className="text-[11px] px-2 py-0.5 rounded-full bg-[#fef3c7] text-[#92400e] font-semibold">
-                      Under review
-                    </span>
+              {cases.slice(0, 3).map((c) => (
+                <div key={c.id} className="bg-white rounded-xl border border-[#e3ded4] p-4 shadow-sm flex items-center justify-between">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="font-mono text-xs font-bold text-[#0d3d3a]">Case #{c.caseRef}</span>
+                      <span className={`text-[11px] px-2 py-0.5 rounded-full font-semibold border ${
+                        c.decisionStatus === 'Ready for Payout' || c.decisionStatus === 'Approved'
+                          ? 'bg-[#ecfdf5] text-[#166534] border-[#bbf7d0]'
+                          : c.decisionStatus === 'Under Human Review'
+                          ? 'bg-[#fef3c7] text-[#92400e] border-[#fde68a]'
+                          : 'bg-[#e8f2f0] text-[#0d6b63] border-[#d0dfd3]'
+                      }`}>
+                        {c.decisionStatus}
+                      </span>
+                    </div>
+                    <p className="text-xs text-[#6b7775] mt-1 capitalize">{c.carrier.type} · {c.carrier.route}</p>
                   </div>
-                  <p className="text-xs text-[#6b7775] mt-1">Flight · Delhi → Mumbai</p>
+                  <Link
+                    to={`/refunds/${c.id}`}
+                    className="text-xs font-bold text-[#0d6b63] hover:underline"
+                  >
+                    View case →
+                  </Link>
                 </div>
-                <Link
-                  to="/refunds/RF12345"
-                  className="text-xs font-bold text-[#0d6b63] hover:underline"
-                >
-                  View case →
-                </Link>
-              </div>
-
-              {/* Claim 2 */}
-              <div className="bg-white rounded-xl border border-[#e3ded4] p-4 shadow-sm flex items-center justify-between">
-                <div>
-                  <div className="flex items-center gap-2">
-                    <span className="font-mono text-xs font-bold text-[#0d3d3a]">Case #RF11982</span>
-                    <span className="text-[11px] px-2 py-0.5 rounded-full bg-[#ecfdf5] text-[#166534] font-semibold">
-                      Decision shared
-                    </span>
-                  </div>
-                  <p className="text-xs text-[#6b7775] mt-1">Flight · Mumbai → Goa</p>
-                </div>
-                <Link
-                  to="/refunds/RF11982"
-                  className="text-xs font-bold text-[#0d6b63] hover:underline"
-                >
-                  View case →
-                </Link>
-              </div>
-
-              {/* Claim 3 */}
-              <div className="bg-white rounded-xl border border-[#e3ded4] p-4 shadow-sm flex items-center justify-between">
-                <div>
-                  <div className="flex items-center gap-2">
-                    <span className="font-mono text-xs font-bold text-[#0d3d3a]">Case #RF11470</span>
-                    <span className="text-[11px] px-2 py-0.5 rounded-full bg-[#e8f2f0] text-[#0d6b63] font-semibold">
-                      Submitted
-                    </span>
-                  </div>
-                  <p className="text-xs text-[#6b7775] mt-1">Hotel · Goa Beach Resort</p>
-                </div>
-                <Link
-                  to="/refunds/RF11470"
-                  className="text-xs font-bold text-[#0d6b63] hover:underline"
-                >
-                  View case →
-                </Link>
-              </div>
+              ))}
             </div>
           </div>
         </div>

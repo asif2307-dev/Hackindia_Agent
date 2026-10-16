@@ -2,10 +2,14 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { SiteHeader } from '../components/layout/SiteHeader';
 import { SiteFooter } from '../components/layout/SiteFooter';
+import { useTravelBooking } from '../context/TravelBookingContext';
 
 export const CabsPage: React.FC = () => {
   const navigate = useNavigate();
-  const [bookedCab, setBookedCab] = useState<string | null>(null);
+  const { searchCriteria, openBookingSummary } = useTravelBooking();
+  const [selectedTripType, setSelectedTripType] = useState('Airport transfer');
+  const [selectedCabTypes, setSelectedCabTypes] = useState<string[]>(['Hatchback', 'Sedan', 'SUV', 'Premium SUV']);
+  const [selectedFeatures, setSelectedFeatures] = useState<string[]>(['Flight tracking']);
 
   const cabs = [
     {
@@ -42,23 +46,57 @@ export const CabsPage: React.FC = () => {
     },
   ];
 
-  const handleBook = (type: string) => {
-    setBookedCab(type);
-    setTimeout(() => {
-      navigate('/bookings');
-    }, 1200);
+  const parsedDate = new Date(searchCriteria.departDate + 'T00:00:00');
+  const formattedDate = !isNaN(parsedDate.getTime())
+    ? parsedDate.toLocaleDateString('en-GB', { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' })
+    : 'Sat, 24 Oct 2026';
+
+  const handleBook = (cab: typeof cabs[0]) => {
+    const fareNum = parseInt(cab.fare.replace(/[^0-9]/g, '')) || 850;
+    openBookingSummary({
+      id: cab.id,
+      serviceType: 'cabs',
+      title: `${cab.type} Transfer`,
+      operator: 'Agent Travel Fleet',
+      code: `CAB-${cab.type.toUpperCase().replace(/\s+/g, '')}`,
+      route: `${searchCriteria.origin || 'Delhi Airport'} → ${searchCriteria.destination || 'Connaught Place'}`,
+      origin: searchCriteria.origin || 'Delhi Airport',
+      destination: searchCriteria.destination || 'Connaught Place',
+      departDate: searchCriteria.departDate,
+      departTime: '08:30',
+      arriveTime: '09:15',
+      duration: '45m',
+      travelClass: cab.type,
+      passengers: searchCriteria.passengers || '2 passengers',
+      fareFormatted: cab.fare,
+      fareAmount: fareNum,
+      baseRatePerUnit: fareNum,
+      refundable: true,
+      notes: `${cab.capacity} · Tolls & taxes included`,
+    });
+  };
+
+  const filteredCabs = cabs.filter((c) => {
+    if (selectedCabTypes.length > 0 && !selectedCabTypes.includes(c.type)) {
+      return false;
+    }
+    return true;
+  });
+
+  const toggleCabType = (type: string) => {
+    setSelectedCabTypes((prev) =>
+      prev.includes(type) ? prev.filter((t) => t !== type) : [...prev, type]
+    );
+  };
+
+  const handleClearFilters = () => {
+    setSelectedCabTypes(['Hatchback', 'Sedan', 'SUV', 'Premium SUV']);
+    setSelectedFeatures([]);
   };
 
   return (
     <div className="min-h-screen bg-[#f7f4ed] flex flex-col font-sans text-[#192524] antialiased">
       <SiteHeader activeTab="cabs" />
-
-      {bookedCab && (
-        <div className="fixed top-20 right-6 z-50 p-4 rounded-xl bg-[#0d6b63] text-white font-semibold shadow-xl flex items-center gap-2 text-sm animate-fade-in">
-          <span className="material-symbols-outlined text-[20px]">local_taxi</span>
-          <span>{bookedCab} transfer booked with flight delay tracking!</span>
-        </div>
-      )}
 
       <main className="flex-1 w-full site-container py-6 text-left">
         {/* Breadcrumb */}
@@ -74,10 +112,10 @@ export const CabsPage: React.FC = () => {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-5 border-b border-[#e3ded4] gap-4">
           <div>
             <h1 className="text-2xl sm:text-3xl font-bold text-[#0d3d3a] tracking-tight">
-              Cabs from Delhi Airport to Connaught Place
+              Cabs from {searchCriteria.origin || 'Delhi Airport'} to {searchCriteria.destination || 'Connaught Place'}
             </h1>
             <p className="text-xs sm:text-sm text-[#5c6967] mt-0.5">
-              Sat, 24 Oct 2026 · Pickup 08:30 · 2 passengers · Approx. 16 km, 45 min
+              {formattedDate} · Pickup 08:30 · {searchCriteria.passengers || '2 passengers'} · Approx. 16 km, 45 min
             </p>
           </div>
 
@@ -96,7 +134,7 @@ export const CabsPage: React.FC = () => {
             <div className="bg-white rounded-xl border border-[#e3ded4] p-4 shadow-sm space-y-4 text-xs">
               <div className="flex items-center justify-between pb-3 border-b border-[#e3ded4]">
                 <h3 className="font-bold text-[#0d3d3a]">Filters</h3>
-                <button className="text-[#0d6b63] hover:underline font-semibold">Clear all</button>
+                <button onClick={handleClearFilters} className="text-[#0d6b63] hover:underline font-semibold">Clear all</button>
               </div>
 
               {/* Trip Type */}
@@ -104,7 +142,13 @@ export const CabsPage: React.FC = () => {
                 <label className="font-bold text-[#0d3d3a] uppercase tracking-wider block">Trip type</label>
                 {['Airport transfer', 'One-way outstation', 'Round trip', 'Hourly rental'].map((tt) => (
                   <label key={tt} className="flex items-center gap-2 cursor-pointer text-[#42504e]">
-                    <input type="checkbox" defaultChecked={tt === 'Airport transfer'} className="accent-[#0d6b63] rounded" />
+                    <input
+                      type="radio"
+                      name="tripType"
+                      checked={selectedTripType === tt}
+                      onChange={() => setSelectedTripType(tt)}
+                      className="accent-[#0d6b63]"
+                    />
                     <span>{tt}</span>
                   </label>
                 ))}
@@ -113,9 +157,14 @@ export const CabsPage: React.FC = () => {
               {/* Cab Type */}
               <div className="space-y-2 pt-2 border-t border-[#e3ded4]">
                 <label className="font-bold text-[#0d3d3a] uppercase tracking-wider block">Cab type</label>
-                {['Hatchback', 'Sedan', 'SUV', 'Premium'].map((ct) => (
+                {['Hatchback', 'Sedan', 'SUV', 'Premium SUV'].map((ct) => (
                   <label key={ct} className="flex items-center gap-2 cursor-pointer text-[#42504e]">
-                    <input type="checkbox" defaultChecked className="accent-[#0d6b63] rounded" />
+                    <input
+                      type="checkbox"
+                      checked={selectedCabTypes.includes(ct)}
+                      onChange={() => toggleCabType(ct)}
+                      className="accent-[#0d6b63] rounded"
+                    />
                     <span>{ct}</span>
                   </label>
                 ))}
@@ -126,7 +175,16 @@ export const CabsPage: React.FC = () => {
                 <label className="font-bold text-[#0d3d3a] uppercase tracking-wider block">Features</label>
                 {['Meet & greet', 'Flight tracking', 'Extra luggage space'].map((f) => (
                   <label key={f} className="flex items-center gap-2 cursor-pointer text-[#42504e]">
-                    <input type="checkbox" defaultChecked={f === 'Flight tracking'} className="accent-[#0d6b63] rounded" />
+                    <input
+                      type="checkbox"
+                      checked={selectedFeatures.includes(f)}
+                      onChange={() => {
+                        setSelectedFeatures((prev) =>
+                          prev.includes(f) ? prev.filter((item) => item !== f) : [...prev, f]
+                        );
+                      }}
+                      className="accent-[#0d6b63] rounded"
+                    />
                     <span>{f}</span>
                   </label>
                 ))}
@@ -137,10 +195,10 @@ export const CabsPage: React.FC = () => {
           {/* Right Cab Cards */}
           <div className="lg:col-span-9 space-y-4">
             <div className="text-xs text-[#6b7775]">
-              4 cab types available · Sample fares with toll included
+              {filteredCabs.length} cab {filteredCabs.length === 1 ? 'type' : 'types'} available · Sample fares with toll included
             </div>
 
-            {cabs.map((cab) => (
+            {filteredCabs.map((cab) => (
               <div
                 key={cab.id}
                 className="bg-white rounded-xl border border-[#e3ded4] p-5 shadow-sm hover:border-[#0d6b63]/60 transition-all space-y-3"
@@ -174,7 +232,7 @@ export const CabsPage: React.FC = () => {
                   </div>
 
                   <button
-                    onClick={() => handleBook(cab.type)}
+                    onClick={() => handleBook(cab)}
                     className="bg-[#0d6b63] text-white px-5 py-2 rounded-md text-xs font-semibold hover:bg-[#0a534d] transition-colors shadow-sm"
                   >
                     Book cab
@@ -182,6 +240,18 @@ export const CabsPage: React.FC = () => {
                 </div>
               </div>
             ))}
+
+            {filteredCabs.length === 0 && (
+              <div className="bg-white rounded-xl border border-[#e3ded4] p-10 text-center text-[#6b7775]">
+                <p className="text-sm font-semibold text-[#0d3d3a]">No cabs match selected filters</p>
+                <button
+                  onClick={handleClearFilters}
+                  className="mt-2 text-xs font-semibold text-[#0d6b63] hover:underline"
+                >
+                  Reset filters
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </main>

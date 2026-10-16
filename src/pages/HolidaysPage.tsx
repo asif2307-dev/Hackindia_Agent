@@ -2,10 +2,14 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { SiteHeader } from '../components/layout/SiteHeader';
 import { SiteFooter } from '../components/layout/SiteFooter';
+import { useTravelBooking } from '../context/TravelBookingContext';
 
 export const HolidaysPage: React.FC = () => {
   const navigate = useNavigate();
-  const [bookedPkg, setBookedPkg] = useState<string | null>(null);
+  const { searchCriteria, openBookingSummary } = useTravelBooking();
+  const [selectedDestTypes, setSelectedDestTypes] = useState<string[]>(['Mountains', 'Beaches', 'Heritage', 'Backwaters']);
+  const [selectedDurations, setSelectedDurations] = useState<string[]>(['3 – 4 nights', '5 – 6 nights', '7+ nights']);
+  const [selectedInclusions, setSelectedInclusions] = useState<string[]>(['Flights included', 'Hotel stay', 'Meals', 'Sightseeing']);
 
   const packages = [
     {
@@ -50,23 +54,63 @@ export const HolidaysPage: React.FC = () => {
     },
   ];
 
-  const handleBook = (title: string) => {
-    setBookedPkg(title);
-    setTimeout(() => {
-      navigate('/bookings');
-    }, 1200);
+  const parsedDate = new Date(searchCriteria.departDate + 'T00:00:00');
+  const formattedDate = !isNaN(parsedDate.getTime())
+    ? parsedDate.toLocaleDateString('en-GB', { month: 'short', year: 'numeric' })
+    : 'Nov – Dec 2026';
+
+  const handleBook = (pkg: typeof packages[0]) => {
+    const fareNum = parseInt(pkg.price.replace(/[^0-9]/g, '')) || 24999;
+    openBookingSummary({
+      id: pkg.id,
+      serviceType: 'holidays',
+      title: `${pkg.title} (${pkg.tag})`,
+      operator: 'Agent Travel Holidays',
+      code: `PKG-${pkg.tag}`,
+      route: `${searchCriteria.origin || 'Delhi'} → ${pkg.locations}`,
+      origin: searchCriteria.origin || 'Delhi',
+      destination: pkg.locations,
+      departDate: searchCriteria.departDate,
+      duration: pkg.duration,
+      passengers: searchCriteria.passengers || '2 travellers',
+      fareFormatted: pkg.price,
+      fareAmount: fareNum,
+      baseRatePerUnit: fareNum,
+      refundable: true,
+      notes: `${pkg.duration} · ${pkg.inclusions.join(' · ')}`,
+    });
+  };
+
+  const tagToCategory: Record<string, string> = {
+    KASHMIR: 'Mountains',
+    GOA: 'Beaches',
+    KERALA: 'Backwaters',
+    RAJASTHAN: 'Heritage',
+  };
+
+  const filteredPackages = packages.filter((pkg) => {
+    const category = tagToCategory[pkg.tag] || 'Mountains';
+    if (selectedDestTypes.length > 0 && !selectedDestTypes.includes(category)) {
+      return false;
+    }
+    return true;
+  });
+
+  const toggleDestType = (dt: string) => {
+    setSelectedDestTypes((prev) =>
+      prev.includes(dt) ? prev.filter((item) => item !== dt) : [...prev, dt]
+    );
+  };
+
+  const handleClearFilters = () => {
+    setSelectedDestTypes(['Mountains', 'Beaches', 'Heritage', 'Backwaters']);
+    setSelectedDurations(['3 – 4 nights', '5 – 6 nights', '7+ nights']);
+    setSelectedInclusions(['Flights included', 'Hotel stay', 'Meals', 'Sightseeing']);
   };
 
   return (
     <div className="min-h-screen bg-[#f7f4ed] flex flex-col font-sans text-[#192524] antialiased">
       <SiteHeader activeTab="holidays" />
-
-      {bookedPkg && (
-        <div className="fixed top-20 right-6 z-50 p-4 rounded-xl bg-[#0d6b63] text-white font-semibold shadow-xl flex items-center gap-2 text-sm animate-fade-in">
-          <span className="material-symbols-outlined text-[20px]">beach_access</span>
-          <span>{bookedPkg} added to itinerary with flexible cancellation guarantee!</span>
-        </div>
-      )}
 
       <main className="flex-1 w-full site-container py-6 text-left">
         {/* Breadcrumb */}
@@ -75,17 +119,17 @@ export const HolidaysPage: React.FC = () => {
           <span>›</span>
           <span className="text-[#6b7775]">Holidays</span>
           <span>›</span>
-          <span className="text-[#0d3d3a] font-medium">From Delhi</span>
+          <span className="text-[#0d3d3a] font-medium">From {searchCriteria.origin || 'Delhi'}</span>
         </div>
 
         {/* Title Bar */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-5 border-b border-[#e3ded4] gap-4">
           <div>
             <h1 className="text-2xl sm:text-3xl font-bold text-[#0d3d3a] tracking-tight">
-              Holiday packages from Delhi
+              Holiday packages from {searchCriteria.origin || 'Delhi'}
             </h1>
             <p className="text-xs sm:text-sm text-[#5c6967] mt-0.5">
-              Departing Nov – Dec 2026 · 2 travellers · 64 packages found
+              Departing {formattedDate} · {searchCriteria.passengers || '2 travellers'} · {filteredPackages.length} packages found
             </p>
           </div>
 
@@ -104,7 +148,7 @@ export const HolidaysPage: React.FC = () => {
             <div className="bg-white rounded-xl border border-[#e3ded4] p-4 shadow-sm space-y-4 text-xs">
               <div className="flex items-center justify-between pb-3 border-b border-[#e3ded4]">
                 <h3 className="font-bold text-[#0d3d3a]">Filters</h3>
-                <button className="text-[#0d6b63] hover:underline font-semibold">Clear all</button>
+                <button onClick={handleClearFilters} className="text-[#0d6b63] hover:underline font-semibold">Clear all</button>
               </div>
 
               {/* Destination Type */}
@@ -112,7 +156,12 @@ export const HolidaysPage: React.FC = () => {
                 <label className="font-bold text-[#0d3d3a] uppercase tracking-wider block">Destination type</label>
                 {['Mountains', 'Beaches', 'Heritage', 'Backwaters'].map((dt) => (
                   <label key={dt} className="flex items-center gap-2 cursor-pointer text-[#42504e]">
-                    <input type="checkbox" defaultChecked={dt === 'Mountains'} className="accent-[#0d6b63] rounded" />
+                    <input
+                      type="checkbox"
+                      checked={selectedDestTypes.includes(dt)}
+                      onChange={() => toggleDestType(dt)}
+                      className="accent-[#0d6b63] rounded"
+                    />
                     <span>{dt}</span>
                   </label>
                 ))}
@@ -123,7 +172,16 @@ export const HolidaysPage: React.FC = () => {
                 <label className="font-bold text-[#0d3d3a] uppercase tracking-wider block">Duration</label>
                 {['3 – 4 nights', '5 – 6 nights', '7+ nights'].map((dur) => (
                   <label key={dur} className="flex items-center gap-2 cursor-pointer text-[#42504e]">
-                    <input type="checkbox" defaultChecked={dur === '5 – 6 nights'} className="accent-[#0d6b63] rounded" />
+                    <input
+                      type="checkbox"
+                      checked={selectedDurations.includes(dur)}
+                      onChange={() => {
+                        setSelectedDurations((prev) =>
+                          prev.includes(dur) ? prev.filter((d) => d !== dur) : [...prev, dur]
+                        );
+                      }}
+                      className="accent-[#0d6b63] rounded"
+                    />
                     <span>{dur}</span>
                   </label>
                 ))}
@@ -134,7 +192,16 @@ export const HolidaysPage: React.FC = () => {
                 <label className="font-bold text-[#0d3d3a] uppercase tracking-wider block">Inclusions</label>
                 {['Flights included', 'Hotel stay', 'Meals', 'Sightseeing'].map((inc) => (
                   <label key={inc} className="flex items-center gap-2 cursor-pointer text-[#42504e]">
-                    <input type="checkbox" defaultChecked className="accent-[#0d6b63] rounded" />
+                    <input
+                      type="checkbox"
+                      checked={selectedInclusions.includes(inc)}
+                      onChange={() => {
+                        setSelectedInclusions((prev) =>
+                          prev.includes(inc) ? prev.filter((i) => i !== inc) : [...prev, inc]
+                        );
+                      }}
+                      className="accent-[#0d6b63] rounded"
+                    />
                     <span>{inc}</span>
                   </label>
                 ))}
@@ -145,10 +212,10 @@ export const HolidaysPage: React.FC = () => {
           {/* Right Packages List */}
           <div className="lg:col-span-9 space-y-4">
             <div className="text-xs text-[#6b7775]">
-              Showing 4 of 64 packages · Prices are sample data per person on twin sharing
+              Showing {filteredPackages.length} of {packages.length} packages · Prices are sample data per person on twin sharing
             </div>
 
-            {packages.map((pkg) => (
+            {filteredPackages.map((pkg) => (
               <div
                 key={pkg.id}
                 className="bg-white rounded-xl border border-[#e3ded4] overflow-hidden shadow-sm hover:border-[#0d6b63]/60 transition-all grid grid-cols-1 sm:grid-cols-12"
@@ -191,7 +258,7 @@ export const HolidaysPage: React.FC = () => {
                     </div>
 
                     <button
-                      onClick={() => handleBook(pkg.title)}
+                      onClick={() => handleBook(pkg)}
                       className="bg-[#0d6b63] text-white px-5 py-2 rounded-md text-xs font-semibold hover:bg-[#0a534d] transition-colors shadow-sm"
                     >
                       Book package
@@ -200,6 +267,18 @@ export const HolidaysPage: React.FC = () => {
                 </div>
               </div>
             ))}
+
+            {filteredPackages.length === 0 && (
+              <div className="bg-white rounded-xl border border-[#e3ded4] p-10 text-center text-[#6b7775]">
+                <p className="text-sm font-semibold text-[#0d3d3a]">No packages match selected filters</p>
+                <button
+                  onClick={handleClearFilters}
+                  className="mt-2 text-xs font-semibold text-[#0d6b63] hover:underline"
+                >
+                  Reset filters
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </main>

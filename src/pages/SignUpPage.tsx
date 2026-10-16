@@ -13,6 +13,16 @@ export const SignUpPage: React.FC = () => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    sessionStorage.setItem(
+      'agent_travel_user',
+      JSON.stringify({
+        name: fullName || 'Aarav Sharma',
+        email: email || 'traveller@example.com',
+        phone: phone,
+        signedIn: true,
+        timestamp: new Date().toISOString(),
+      })
+    );
     navigate('/bookings');
   };
 

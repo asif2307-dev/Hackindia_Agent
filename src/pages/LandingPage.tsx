@@ -2,36 +2,46 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { SiteHeader } from '../components/layout/SiteHeader';
 import { SiteFooter } from '../components/layout/SiteFooter';
+import { useTravelBooking } from '../context/TravelBookingContext';
 
 type ServiceType = 'flights' | 'hotels' | 'holidays' | 'bus' | 'trains' | 'cabs';
 
 export const LandingPage: React.FC = () => {
   const navigate = useNavigate();
-  const [activeService, setActiveService] = useState<ServiceType>('flights');
+  const { searchCriteria, setSearchCriteria } = useTravelBooking();
+
+  const [activeService, setActiveService] = useState<ServiceType>(() => {
+    if (searchCriteria.serviceType === 'buses') return 'bus';
+    if (searchCriteria.serviceType === 'trains') return 'trains';
+    if (searchCriteria.serviceType === 'hotels') return 'hotels';
+    if (searchCriteria.serviceType === 'cabs') return 'cabs';
+    if (searchCriteria.serviceType === 'holidays') return 'holidays';
+    return 'flights';
+  });
 
   // Flight form state
-  const [fromCity, setFromCity] = useState('Delhi (DEL)');
-  const [toCity, setToCity] = useState('Mumbai (BOM)');
-  const [departDate, setDepartDate] = useState('2026-10-24');
-  const [returnDate, setReturnDate] = useState('2026-10-30');
-  const [travellers, setTravellers] = useState('1 Traveller · Economy');
+  const [fromCity, setFromCity] = useState(searchCriteria.origin || 'Delhi (DEL)');
+  const [toCity, setToCity] = useState(searchCriteria.destination || 'Mumbai (BOM)');
+  const [departDate, setDepartDate] = useState(searchCriteria.departDate || '2026-12-21');
+  const [returnDate, setReturnDate] = useState(searchCriteria.returnDate || '2026-12-28');
+  const [travellers, setTravellers] = useState(searchCriteria.passengers || '1 Traveller · Economy');
 
   // Hotel form state
-  const [hotelCity, setHotelCity] = useState('Goa, India');
-  const [checkIn, setCheckIn] = useState('2026-12-12');
-  const [checkOut, setCheckOut] = useState('2026-12-16');
+  const [hotelCity, setHotelCity] = useState(searchCriteria.destination?.includes('Goa') ? searchCriteria.destination : 'Goa, India');
+  const [checkIn, setCheckIn] = useState('2026-12-21');
+  const [checkOut, setCheckOut] = useState('2026-12-24');
   const [guests, setGuests] = useState('2 Guests · 1 Room');
 
   // Train form state
-  const [trainFrom, setTrainFrom] = useState('New Delhi (NDLS)');
-  const [trainTo, setTrainTo] = useState('Jaipur (JP)');
-  const [trainDate, setTrainDate] = useState('2026-11-02');
-  const [trainClass, setTrainClass] = useState('All Classes');
+  const [trainFrom, setTrainFrom] = useState(searchCriteria.origin?.includes('Delhi') ? searchCriteria.origin : 'New Delhi (NDLS)');
+  const [trainTo, setTrainTo] = useState(searchCriteria.destination?.includes('Jaipur') ? searchCriteria.destination : 'Jaipur (JP)');
+  const [trainDate, setTrainDate] = useState(searchCriteria.departDate || '2026-11-02');
+  const [trainClass, setTrainClass] = useState(searchCriteria.travelClass || 'All Classes');
 
   // Bus form state
   const [busFrom, setBusFrom] = useState('Bengaluru');
   const [busTo, setBusTo] = useState('Goa');
-  const [busDate, setBusDate] = useState('2026-11-06');
+  const [busDate, setBusDate] = useState(searchCriteria.departDate || '2026-11-06');
 
   // Cab form state
   const [cabPickup, setCabPickup] = useState('Delhi Airport (DEL)');
@@ -42,19 +52,132 @@ export const LandingPage: React.FC = () => {
   const [holidayFrom, setHolidayFrom] = useState('Delhi');
   const [holidayDest, setHolidayDest] = useState('Kashmir');
 
+  const [validationError, setValidationError] = useState<string | null>(null);
+
+  const handleSwapCities = () => {
+    const temp = fromCity;
+    setFromCity(toCity);
+    setToCity(temp);
+    setValidationError(null);
+  };
+
+  const handleSwapTrainStations = () => {
+    const temp = trainFrom;
+    setTrainFrom(trainTo);
+    setTrainTo(temp);
+    setValidationError(null);
+  };
+
+  const handleSwapBusStations = () => {
+    const temp = busFrom;
+    setBusFrom(busTo);
+    setBusTo(temp);
+    setValidationError(null);
+  };
+
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
+    setValidationError(null);
+
     if (activeService === 'flights') {
+      const o = fromCity.trim();
+      const d = toCity.trim();
+      if (!o || !d) {
+        setValidationError('Please specify both origin and destination.');
+        return;
+      }
+      if (o.toLowerCase() === d.toLowerCase()) {
+        setValidationError('Origin and destination cannot be the same city.');
+        return;
+      }
+      if (!departDate) {
+        setValidationError('Please select a valid departure date.');
+        return;
+      }
+      setSearchCriteria({
+        serviceType: 'flights',
+        origin: o,
+        destination: d,
+        departDate,
+        returnDate,
+        passengers: travellers,
+      });
       navigate('/flights');
     } else if (activeService === 'hotels') {
+      const c = hotelCity.trim();
+      if (!c) {
+        setValidationError('Please enter a destination city or hotel.');
+        return;
+      }
+      if (!checkIn || !checkOut) {
+        setValidationError('Please select both check-in and check-out dates.');
+        return;
+      }
+      const inTime = new Date(checkIn + 'T00:00:00').getTime();
+      const outTime = new Date(checkOut + 'T00:00:00').getTime();
+      if (outTime <= inTime) {
+        setValidationError('Check-out date must be later than check-in date.');
+        return;
+      }
+      setSearchCriteria({
+        serviceType: 'hotels',
+        destination: c,
+        departDate: checkIn,
+        returnDate: checkOut,
+        passengers: guests,
+      });
       navigate('/hotels');
     } else if (activeService === 'trains') {
+      const from = trainFrom.trim();
+      const to = trainTo.trim();
+      if (!from || !to) {
+        setValidationError('Please specify both departure and arrival stations.');
+        return;
+      }
+      if (from.toLowerCase() === to.toLowerCase()) {
+        setValidationError('Departure and arrival stations cannot be the same.');
+        return;
+      }
+      setSearchCriteria({
+        serviceType: 'trains',
+        origin: from,
+        destination: to,
+        departDate: trainDate,
+        travelClass: trainClass,
+      });
       navigate('/trains');
     } else if (activeService === 'bus') {
+      const from = busFrom.trim();
+      const to = busTo.trim();
+      if (!from || !to) {
+        setValidationError('Please specify both origin and destination.');
+        return;
+      }
+      if (from.toLowerCase() === to.toLowerCase()) {
+        setValidationError('Origin and destination cannot be the same.');
+        return;
+      }
+      setSearchCriteria({
+        serviceType: 'buses',
+        origin: from,
+        destination: to,
+        departDate: busDate,
+      });
       navigate('/buses');
     } else if (activeService === 'cabs') {
+      setSearchCriteria({
+        serviceType: 'cabs',
+        origin: cabPickup,
+        destination: cabDrop,
+        departDate: cabDate.split(' ')[0] || '2026-10-24',
+      });
       navigate('/cabs');
     } else if (activeService === 'holidays') {
+      setSearchCriteria({
+        serviceType: 'holidays',
+        origin: holidayFrom,
+        destination: holidayDest,
+      });
       navigate('/holidays');
     }
   };
@@ -213,17 +336,47 @@ export const LandingPage: React.FC = () => {
 
             {/* Tab Form Content */}
             <form onSubmit={handleSearch} className="p-5 sm:p-6">
+              {validationError && (
+                <div className="mb-4 p-3 rounded-lg bg-[#fef2f2] border border-[#fecaca] text-[#991b1b] text-xs font-semibold flex items-center justify-between animate-fade-in">
+                  <div className="flex items-center gap-2">
+                    <span className="material-symbols-outlined text-[18px]">error</span>
+                    <span>{validationError}</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setValidationError(null)}
+                    className="text-[#991b1b] hover:opacity-75 cursor-pointer"
+                  >
+                    <span className="material-symbols-outlined text-[16px]">close</span>
+                  </button>
+                </div>
+              )}
+
               {/* Flights Form */}
               {activeService === 'flights' && (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3 lg:gap-4 items-end">
-                  <div className="lg:col-span-1 border border-[#e3ded4] rounded-lg p-2.5 bg-[#fbf9f4]/60 hover:border-[#0d6b63] transition-colors">
-                    <label className="text-[11px] font-bold text-[#6b7775] uppercase tracking-wider block">
-                      From
-                    </label>
+                  <div className="lg:col-span-1 border border-[#e3ded4] rounded-lg p-2.5 bg-[#fbf9f4]/60 hover:border-[#0d6b63] transition-colors relative">
+                    <div className="flex items-center justify-between">
+                      <label className="text-[11px] font-bold text-[#6b7775] uppercase tracking-wider block">
+                        From
+                      </label>
+                      <button
+                        type="button"
+                        onClick={handleSwapCities}
+                        title="Swap Origin and Destination"
+                        className="text-[#0d6b63] hover:text-[#0a534d] cursor-pointer text-[11px] font-bold flex items-center gap-0.5"
+                      >
+                        <span className="material-symbols-outlined text-[14px]">swap_horiz</span>
+                        <span>Swap</span>
+                      </button>
+                    </div>
                     <input
                       type="text"
                       value={fromCity}
-                      onChange={(e) => setFromCity(e.target.value)}
+                      onChange={(e) => {
+                        setFromCity(e.target.value);
+                        setValidationError(null);
+                      }}
                       className="w-full bg-transparent font-semibold text-[#0d3d3a] text-sm focus:outline-none pt-0.5"
                     />
                   </div>
@@ -235,7 +388,10 @@ export const LandingPage: React.FC = () => {
                     <input
                       type="text"
                       value={toCity}
-                      onChange={(e) => setToCity(e.target.value)}
+                      onChange={(e) => {
+                        setToCity(e.target.value);
+                        setValidationError(null);
+                      }}
                       className="w-full bg-transparent font-semibold text-[#0d3d3a] text-sm focus:outline-none pt-0.5"
                     />
                   </div>
@@ -247,7 +403,10 @@ export const LandingPage: React.FC = () => {
                     <input
                       type="date"
                       value={departDate}
-                      onChange={(e) => setDepartDate(e.target.value)}
+                      onChange={(e) => {
+                        setDepartDate(e.target.value);
+                        setValidationError(null);
+                      }}
                       className="w-full bg-transparent font-semibold text-[#0d3d3a] text-sm focus:outline-none pt-0.5 cursor-pointer"
                     />
                   </div>
@@ -306,26 +465,44 @@ export const LandingPage: React.FC = () => {
                       className="w-full bg-transparent font-semibold text-[#0d3d3a] text-sm focus:outline-none pt-0.5"
                     />
                   </div>
-                  <div className="border border-[#e3ded4] rounded-lg p-2.5 bg-[#fbf9f4]/60">
+                  <div className="border border-[#e3ded4] rounded-lg p-2.5 bg-[#fbf9f4]/60 hover:border-[#0d6b63] transition-colors">
                     <label className="text-[11px] font-bold text-[#6b7775] uppercase tracking-wider block">
                       Check-In
                     </label>
                     <input
                       type="date"
                       value={checkIn}
-                      onChange={(e) => setCheckIn(e.target.value)}
-                      className="w-full bg-transparent font-semibold text-[#0d3d3a] text-sm focus:outline-none pt-0.5"
+                      onChange={(e) => {
+                        const newIn = e.target.value;
+                        setCheckIn(newIn);
+                        setValidationError(null);
+                        if (checkOut <= newIn) {
+                          const parts = newIn.split('-').map(Number);
+                          if (parts.length === 3) {
+                            const d = new Date(parts[0], parts[1] - 1, parts[2] + 1);
+                            const y = d.getFullYear();
+                            const m = String(d.getMonth() + 1).padStart(2, '0');
+                            const day = String(d.getDate()).padStart(2, '0');
+                            setCheckOut(`${y}-${m}-${day}`);
+                          }
+                        }
+                      }}
+                      className="w-full bg-transparent font-semibold text-[#0d3d3a] text-sm focus:outline-none pt-0.5 cursor-pointer"
                     />
                   </div>
-                  <div className="border border-[#e3ded4] rounded-lg p-2.5 bg-[#fbf9f4]/60">
+                  <div className="border border-[#e3ded4] rounded-lg p-2.5 bg-[#fbf9f4]/60 hover:border-[#0d6b63] transition-colors">
                     <label className="text-[11px] font-bold text-[#6b7775] uppercase tracking-wider block">
                       Check-Out
                     </label>
                     <input
                       type="date"
                       value={checkOut}
-                      onChange={(e) => setCheckOut(e.target.value)}
-                      className="w-full bg-transparent font-semibold text-[#0d3d3a] text-sm focus:outline-none pt-0.5"
+                      min={checkIn}
+                      onChange={(e) => {
+                        setCheckOut(e.target.value);
+                        setValidationError(null);
+                      }}
+                      className="w-full bg-transparent font-semibold text-[#0d3d3a] text-sm focus:outline-none pt-0.5 cursor-pointer"
                     />
                   </div>
                   <div className="border border-[#e3ded4] rounded-lg p-2.5 bg-[#fbf9f4]/60">
@@ -355,9 +532,19 @@ export const LandingPage: React.FC = () => {
               {activeService === 'trains' && (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 lg:gap-4 items-end">
                   <div className="border border-[#e3ded4] rounded-lg p-2.5 bg-[#fbf9f4]/60">
-                    <label className="text-[11px] font-bold text-[#6b7775] uppercase tracking-wider block">
-                      From Station
-                    </label>
+                    <div className="flex items-center justify-between">
+                      <label className="text-[11px] font-bold text-[#6b7775] uppercase tracking-wider block">
+                        From Station
+                      </label>
+                      <button
+                        type="button"
+                        onClick={handleSwapTrainStations}
+                        title="Swap Stations"
+                        className="text-[#0d6b63] hover:text-[#0a534d] cursor-pointer"
+                      >
+                        <span className="material-symbols-outlined text-[15px]">swap_horiz</span>
+                      </button>
+                    </div>
                     <input
                       type="text"
                       value={trainFrom}
@@ -418,7 +605,17 @@ export const LandingPage: React.FC = () => {
               {activeService === 'bus' && (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4 items-end">
                   <div className="border border-[#e3ded4] rounded-lg p-2.5 bg-[#fbf9f4]/60">
-                    <label className="text-[11px] font-bold text-[#6b7775] uppercase tracking-wider block">From City</label>
+                    <div className="flex items-center justify-between">
+                      <label className="text-[11px] font-bold text-[#6b7775] uppercase tracking-wider block">From City</label>
+                      <button
+                        type="button"
+                        onClick={handleSwapBusStations}
+                        title="Swap Cities"
+                        className="text-[#0d6b63] hover:text-[#0a534d] cursor-pointer"
+                      >
+                        <span className="material-symbols-outlined text-[15px]">swap_horiz</span>
+                      </button>
+                    </div>
                     <input type="text" value={busFrom} onChange={(e) => setBusFrom(e.target.value)} className="w-full bg-transparent font-semibold text-[#0d3d3a] text-sm focus:outline-none pt-0.5" />
                   </div>
                   <div className="border border-[#e3ded4] rounded-lg p-2.5 bg-[#fbf9f4]/60">
