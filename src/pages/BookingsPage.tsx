@@ -1,451 +1,411 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { allMockBookings } from '../data/mockBookings';
-import { useInvestigation } from '../context/InvestigationContext';
+import { Link } from 'react-router-dom';
+import { SiteHeader } from '../components/layout/SiteHeader';
+import { SiteFooter } from '../components/layout/SiteFooter';
+
+type StatusTab = 'upcoming' | 'completed' | 'cancelled' | 'all';
+type ServiceFilter = 'all' | 'flights' | 'hotels' | 'trains' | 'buses' | 'cabs';
+
+interface BookingItem {
+  id: string;
+  refLabel: string;
+  serviceType: 'FLIGHT' | 'HOTEL' | 'TRAIN' | 'BUS' | 'CAB';
+  title: string;
+  status: 'Cancelled by airline' | 'Confirmed';
+  statusColor: 'error' | 'success';
+  hasRefundAlert?: boolean;
+  refundCaseId?: string;
+  details: { label: string; value: string }[];
+}
 
 export const BookingsPage: React.FC = () => {
-  const navigate = useNavigate();
-  const { selectCaseById } = useInvestigation();
+  const [activeTab, setActiveTab] = useState<StatusTab>('upcoming');
+  const [serviceFilter, setServiceFilter] = useState<ServiceFilter>('all');
+  const [selectedBookingDetails, setSelectedBookingDetails] = useState<BookingItem | null>(null);
 
-  const [bookings] = useState(allMockBookings);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [selectedMode, setSelectedMode] = useState<'all' | 'flight' | 'train' | 'bus'>('all');
-  const [statusFilter, setStatusFilter] = useState<'all' | 'disrupted' | 'ontime'>('all');
-  const [actionSuccessMsg, setActionSuccessMsg] = useState<string | null>(null);
-
-  const handleInspectRefund = (investigationId: string) => {
-    selectCaseById(investigationId);
-    navigate(`/refund-investigations/${investigationId}`);
-  };
-
-  const handleScanGDS = () => {
-    setActionSuccessMsg('Carrier GDS scan completed: 1,428 bookings verified across Amadeus & IRCTC.');
-    setTimeout(() => setActionSuccessMsg(null), 3500);
-  };
+  const bookings: BookingItem[] = [
+    {
+      id: 'BK-1',
+      refLabel: 'PNR · ABC123',
+      serviceType: 'FLIGHT',
+      title: 'Delhi → Mumbai',
+      status: 'Cancelled by airline',
+      statusColor: 'error',
+      hasRefundAlert: true,
+      refundCaseId: 'RF12345',
+      details: [
+        { label: 'TRAVELLER', value: '1 · Economy' },
+        { label: 'DATE', value: '24 Oct 2026' },
+        { label: 'DEPARTS', value: '06:10' },
+      ],
+    },
+    {
+      id: 'BK-2',
+      refLabel: 'Booking ID · HTL456',
+      serviceType: 'HOTEL',
+      title: 'Goa Beach Resort',
+      status: 'Confirmed',
+      statusColor: 'success',
+      details: [
+        { label: 'CHECK-IN', value: '12 Dec 2026' },
+        { label: 'CHECK-OUT', value: '16 Dec 2026' },
+        { label: 'GUESTS', value: '2' },
+      ],
+    },
+    {
+      id: 'BK-3',
+      refLabel: 'PNR · 4521896307',
+      serviceType: 'TRAIN',
+      title: 'New Delhi → Jaipur',
+      status: 'Confirmed',
+      statusColor: 'success',
+      details: [
+        { label: 'DATE', value: '02 Nov 2026' },
+        { label: 'PASSENGERS', value: '2 · Chair Car' },
+        { label: 'DEPARTS', value: '06:05' },
+      ],
+    },
+    {
+      id: 'BK-4',
+      refLabel: 'Ticket · BUS78231',
+      serviceType: 'BUS',
+      title: 'Bengaluru → Goa',
+      status: 'Confirmed',
+      statusColor: 'success',
+      details: [
+        { label: 'DATE', value: '06 Nov 2026' },
+        { label: 'SEAT', value: 'Lower berth, L4' },
+        { label: 'DEPARTS', value: '21:30' },
+      ],
+    },
+    {
+      id: 'BK-5',
+      refLabel: 'Booking · CAB55102',
+      serviceType: 'CAB',
+      title: 'Delhi Airport → Connaught Place',
+      status: 'Confirmed',
+      statusColor: 'success',
+      details: [
+        { label: 'VEHICLE', value: 'Sedan' },
+        { label: 'PICKUP', value: '08:30' },
+        { label: 'DATE', value: '24 Oct 2026' },
+      ],
+    },
+  ];
 
   const filteredBookings = bookings.filter((b) => {
-    const matchesSearch =
-      b.pnr.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      b.bookingRef.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      b.traveler.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      b.carrier.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      b.carrier.code.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      b.carrier.route.toLowerCase().includes(searchQuery.toLowerCase());
+    // Status tab filter
+    if (activeTab === 'cancelled' && b.status !== 'Cancelled by airline') return false;
+    if (activeTab === 'completed') return false; // sample data currently contains 5 upcoming trips
 
-    const matchesMode = selectedMode === 'all' || b.carrier.type === selectedMode;
+    // Service mode filter
+    if (serviceFilter === 'flights' && b.serviceType !== 'FLIGHT') return false;
+    if (serviceFilter === 'hotels' && b.serviceType !== 'HOTEL') return false;
+    if (serviceFilter === 'trains' && b.serviceType !== 'TRAIN') return false;
+    if (serviceFilter === 'buses' && b.serviceType !== 'BUS') return false;
+    if (serviceFilter === 'cabs' && b.serviceType !== 'CAB') return false;
 
-    const matchesStatus =
-      statusFilter === 'all' ||
-      (statusFilter === 'disrupted' && b.status !== 'Confirmed / On Time') ||
-      (statusFilter === 'ontime' && b.status === 'Confirmed / On Time');
-
-    return matchesSearch && matchesMode && matchesStatus;
+    return true;
   });
 
   return (
-    <div className="flex flex-col w-full gap-space-xl pb-16 text-left">
-      {/* Toast Notification */}
-      {actionSuccessMsg && (
-        <div className="fixed top-20 right-6 z-50 p-4 rounded-2xl bg-primary-container text-on-primary-container font-semibold shadow-2xl flex items-center gap-3 animate-fade-in border border-primary">
-          <span className="material-symbols-outlined text-[22px]">task_alt</span>
-          <span>{actionSuccessMsg}</span>
-        </div>
-      )}
+    <div className="min-h-screen bg-[#f7f4ed] flex flex-col font-sans text-[#192524] antialiased">
+      <SiteHeader activeTab="bookings" />
 
-      {/* Top Header & Breadcrumb Bar */}
-      <section className="flex flex-col lg:flex-row lg:items-center justify-between gap-space-md">
-        <div className="flex flex-col gap-space-xs">
-          <div className="flex items-center gap-space-xs flex-wrap">
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#20B8B0]/15 text-[#006D77] border border-[#20B8B0]/30 font-label-sm text-xs font-bold">
-              <span className="w-1.5 h-1.5 rounded-full bg-[#20B8B0] animate-pulse"></span>
-              Live Telemetry Tracking
-            </span>
-            <span className="font-code-sm text-xs text-gray-500 font-medium">
-              1,428 Active Itineraries
-            </span>
-          </div>
-          <h1 className="font-headline-lg text-2xl sm:text-3xl text-[#0d283e] tracking-tight font-extrabold font-['Plus_Jakarta_Sans']">
-            Travel Bookings Ledger
-          </h1>
-          <p className="font-body-md text-sm sm:text-body-md text-gray-600">
-            Continuous GDS monitoring for cancellations, delays, and schedule alterations across flights, trains, and buses.
-          </p>
+      <main className="flex-1 w-full site-container py-8 text-left">
+        {/* Breadcrumb */}
+        <div className="text-xs text-[#6b7775] mb-2 flex items-center gap-1.5">
+          <Link to="/" className="hover:text-[#0d3d3a]">Home</Link>
+          <span>›</span>
+          <span className="text-[#0d3d3a] font-medium">My Bookings</span>
         </div>
 
-        <div className="flex items-center flex-wrap gap-space-sm">
-          <button
-            onClick={handleScanGDS}
-            className="flex items-center gap-space-xs bg-white text-[#0d283e] font-label-md text-xs sm:text-sm font-semibold px-space-md py-2.5 rounded-full shadow-xs hover:bg-[#f0f5f7] transition-all border border-[#006D77]/20 cursor-pointer"
-            type="button"
-          >
-            <span className="material-symbols-outlined text-[18px] text-[#006D77]">sync</span>
-            <span>Scan Carrier GDS</span>
-          </button>
-
-          <button
-            onClick={() => alert('Exporting bookings ledger CSV/Excel...')}
-            className="flex items-center gap-space-xs bg-white text-[#0d283e] font-label-md text-xs sm:text-sm font-semibold px-space-md py-2.5 rounded-full shadow-xs hover:bg-[#f0f5f7] transition-all border border-[#006D77]/20 cursor-pointer"
-            type="button"
-          >
-            <span className="material-symbols-outlined text-[18px] text-gray-600">ios_share</span>
-            <span>Export Bookings</span>
-          </button>
-
-          <button
-            onClick={() => navigate('/refund-investigations/AT-9842')}
-            className="flex items-center gap-space-xs bg-gradient-to-r from-[#006D77] to-[#20B8B0] hover:from-[#005a63] hover:to-[#1aa39b] text-white font-label-md text-xs sm:text-sm font-bold px-space-lg py-2.5 rounded-full shadow-md hover:shadow-lg transition-all cursor-pointer"
-            type="button"
-          >
-            <span className="material-symbols-outlined text-[18px]">add</span>
-            <span>Audit New Booking</span>
-          </button>
-        </div>
-      </section>
-
-      {/* 4-Metric Grid Architecture */}
-      <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-space-md text-left">
-        <div className="bg-surface-container-lowest rounded-2xl p-space-lg shadow-sm border border-surface-container flex flex-col justify-between">
-          <div className="flex items-center justify-between">
-            <span className="font-label-md text-sm text-on-surface-variant font-medium">Monitored Bookings</span>
-            <div className="w-9 h-9 rounded-xl bg-surface-container-high flex items-center justify-center text-on-surface">
-              <span className="material-symbols-outlined text-[20px]">flight_takeoff</span>
-            </div>
-          </div>
-          <div className="mt-space-md flex flex-col">
-            <span className="font-metric-display text-metric-display text-on-surface tracking-tight font-bold">1,428</span>
-            <span className="font-body-sm text-xs text-on-surface-variant mt-1">Flights, trains & luxury buses</span>
-          </div>
-          <div className="mt-space-sm pt-space-xs flex items-center justify-between font-label-sm text-xs text-on-surface-variant/80 border-t border-surface-container">
-            <span>Audit Coverage</span>
-            <span className="text-primary font-semibold">100% Monitored</span>
-          </div>
-        </div>
-
-        <div className="bg-surface-container-lowest rounded-2xl p-space-lg shadow-sm border border-surface-container flex flex-col justify-between">
-          <div className="flex items-center justify-between">
-            <span className="font-label-md text-sm text-on-surface-variant font-medium">Disrupted / Flagged</span>
-            <div className="w-9 h-9 rounded-xl bg-error-container flex items-center justify-center text-error">
-              <span className="material-symbols-outlined text-[20px]">warning</span>
-            </div>
-          </div>
-          <div className="mt-space-md flex flex-col">
-            <span className="font-metric-display text-metric-display text-on-surface tracking-tight font-bold">42</span>
-            <span className="font-body-sm text-xs text-error font-medium mt-1">Cancellations & major delays</span>
-          </div>
-          <div className="mt-space-sm pt-space-xs flex items-center justify-between font-label-sm text-xs text-on-surface-variant/80 border-t border-surface-container">
-            <span>Eligible for Refund</span>
-            <span className="text-error font-semibold">100% Claim Actionable</span>
-          </div>
-        </div>
-
-        <div className="bg-surface-container-lowest rounded-2xl p-space-lg shadow-sm border border-surface-container flex flex-col justify-between">
-          <div className="flex items-center justify-between">
-            <span className="font-label-md text-sm text-on-surface-variant font-medium">Refunds Recovered</span>
-            <div className="w-9 h-9 rounded-xl bg-primary-container/20 flex items-center justify-center text-primary font-semibold">
-              <span className="material-symbols-outlined text-[20px]">verified</span>
-            </div>
-          </div>
-          <div className="mt-space-md flex flex-col">
-            <span className="font-metric-display text-metric-display text-on-surface tracking-tight font-bold">₹56.8L</span>
-            <span className="font-body-sm text-xs text-primary font-medium mt-1">Direct corporate restitution</span>
-          </div>
-          <div className="mt-space-sm pt-space-xs flex items-center justify-between font-label-sm text-xs text-on-surface-variant/80 border-t border-surface-container">
-            <span>Automated Clearance</span>
-            <span className="text-primary font-semibold">98.2% Resolution</span>
-          </div>
-        </div>
-
-        <div className="bg-surface-container-lowest rounded-2xl p-space-lg shadow-sm border border-surface-container flex flex-col justify-between">
-          <div className="flex items-center justify-between">
-            <span className="font-label-md text-sm text-on-surface-variant font-medium">Telemetry Sync</span>
-            <div className="w-9 h-9 rounded-xl bg-secondary-fixed flex items-center justify-center text-secondary">
-              <span className="material-symbols-outlined text-[20px]">radar</span>
-            </div>
-          </div>
-          <div className="mt-space-md flex flex-col">
-            <span className="font-metric-display text-metric-display text-on-surface tracking-tight font-bold">Live</span>
-            <span className="font-body-sm text-xs text-secondary font-medium mt-1">Amadeus, IRCTC & RedBus sync</span>
-          </div>
-          <div className="mt-space-sm pt-space-xs flex items-center justify-between font-label-sm text-xs text-on-surface-variant/80 border-t border-surface-container">
-            <span>Telemetry Ping</span>
-            <span className="text-on-surface font-semibold">&lt; 15 seconds</span>
-          </div>
-        </div>
-      </section>
-
-      {/* Main Bookings Ledger Table Section */}
-      <section className="bg-surface-container-lowest rounded-3xl p-space-lg sm:p-space-xl shadow-sm border border-surface-container flex flex-col gap-space-lg">
-        {/* Table Search & Filter Toolbar */}
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-space-md">
+        {/* Title Header Strip */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-6 border-b border-[#e3ded4] gap-4">
           <div>
-            <h3 className="font-headline-md text-xl sm:text-headline-md font-bold text-on-surface tracking-tight">
-              Audited Bookings Ledger
-            </h3>
-            <p className="font-body-sm text-xs sm:text-body-sm text-on-surface-variant">
-              Every passenger itinerary synchronized from partner APIs with automated disruption audits
+            <h1 className="text-3xl sm:text-4xl font-bold text-[#0d3d3a] tracking-tight">
+              My bookings
+            </h1>
+            <p className="text-sm text-[#5c6967] mt-1">
+              Flights, hotels, trains, buses and cabs, all in one place.
             </p>
           </div>
 
-          <div className="flex flex-wrap items-center gap-space-sm">
-            {/* Search Input */}
-            <div className="flex items-center gap-space-xs bg-surface-container-low px-space-md py-2 rounded-full min-w-[240px] border border-surface-container">
-              <span className="material-symbols-outlined text-[18px] text-on-surface-variant">search</span>
-              <input
-                className="bg-transparent font-body-sm text-xs sm:text-sm text-on-surface placeholder:text-on-surface-variant/70 focus:outline-none w-full"
-                placeholder="Search PNR, traveler, carrier, route..."
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
+          <Link
+            to="/"
+            className="self-start sm:self-auto bg-[#0d6b63] text-white px-4 py-2 rounded-md text-xs font-semibold hover:bg-[#0a534d] transition-colors shadow-sm"
+          >
+            Book a new trip
+          </Link>
+        </div>
+
+        {/* CANCELLATION DISRUPTION ALERT BANNER (Page 8) */}
+        <div className="my-6 bg-[#fffbeb] border border-[#fde68a] rounded-xl p-4 sm:p-5 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 shadow-sm">
+          <div className="flex items-start gap-3">
+            <span className="material-symbols-outlined text-[22px] text-[#b45309] shrink-0 mt-0.5">
+              warning
+            </span>
+            <div className="text-xs sm:text-sm text-[#92400e] leading-relaxed">
+              <strong>Your Delhi → Mumbai flight was cancelled by the airline.</strong> Our AI can help you check refund eligibility and track your claim.
+            </div>
+          </div>
+
+          <Link
+            to="/refunds/RF12345"
+            className="shrink-0 bg-[#0d6b63] text-white px-4 py-2 rounded-md text-xs font-semibold hover:bg-[#0a534d] transition-colors whitespace-nowrap shadow-sm"
+          >
+            Check Refund Eligibility →
+          </Link>
+        </div>
+
+        {/* Status Tabs (Upcoming (5), Completed, Cancelled, All) */}
+        <div className="flex flex-wrap items-center justify-between gap-4 py-3 border-b border-[#e3ded4]">
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setActiveTab('upcoming')}
+              className={`px-3.5 py-1.5 rounded-full text-xs font-semibold transition-colors ${
+                activeTab === 'upcoming'
+                  ? 'bg-[#0d6b63] text-white'
+                  : 'text-[#42504e] hover:bg-[#eae4d8]'
+              }`}
+            >
+              Upcoming (5)
+            </button>
+            <button
+              onClick={() => setActiveTab('completed')}
+              className={`px-3.5 py-1.5 rounded-full text-xs font-semibold transition-colors ${
+                activeTab === 'completed'
+                  ? 'bg-[#0d6b63] text-white'
+                  : 'text-[#42504e] hover:bg-[#eae4d8]'
+              }`}
+            >
+              Completed
+            </button>
+            <button
+              onClick={() => setActiveTab('cancelled')}
+              className={`px-3.5 py-1.5 rounded-full text-xs font-semibold transition-colors ${
+                activeTab === 'cancelled'
+                  ? 'bg-[#0d6b63] text-white'
+                  : 'text-[#42504e] hover:bg-[#eae4d8]'
+              }`}
+            >
+              Cancelled
+            </button>
+            <button
+              onClick={() => setActiveTab('all')}
+              className={`px-3.5 py-1.5 rounded-full text-xs font-semibold transition-colors ${
+                activeTab === 'all'
+                  ? 'bg-[#0d6b63] text-white'
+                  : 'text-[#42504e] hover:bg-[#eae4d8]'
+              }`}
+            >
+              All
+            </button>
+          </div>
+
+          {/* Service Filters */}
+          <div className="flex items-center gap-1.5 overflow-x-auto text-xs">
+            {(['all', 'flights', 'hotels', 'trains', 'buses', 'cabs'] as ServiceFilter[]).map(
+              (svc) => (
+                <button
+                  key={svc}
+                  onClick={() => setServiceFilter(svc)}
+                  className={`px-3 py-1 rounded-md capitalize transition-colors font-medium ${
+                    serviceFilter === svc
+                      ? 'bg-white border border-[#0d6b63] text-[#0d3d3a] font-semibold'
+                      : 'text-[#6b7775] hover:text-[#0d3d3a]'
+                  }`}
+                >
+                  {svc}
+                </button>
+              )
+            )}
+          </div>
+        </div>
+
+        {/* BOOKING CARDS LIST (Page 8) */}
+        <div className="py-6 space-y-4">
+          {filteredBookings.map((b) => (
+            <div
+              key={b.id}
+              className="bg-white rounded-xl border border-[#e3ded4] p-5 shadow-sm hover:border-[#0d6b63]/50 transition-all space-y-3"
+            >
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2 border-b border-[#f0ebe1]">
+                <div className="flex items-center gap-2">
+                  <span className="font-mono text-xs text-[#6b7775] font-medium">
+                    {b.refLabel}
+                  </span>
+                  <span className="text-[#889593]">•</span>
+                  <span className="text-xs font-bold text-[#0d3d3a]">{b.serviceType}</span>
+                </div>
+
+                <span
+                  className={`self-start sm:self-auto text-xs font-semibold px-2.5 py-0.5 rounded-full border ${
+                    b.statusColor === 'error'
+                      ? 'bg-[#fee2e2] text-[#991b1b] border-[#fecaca]'
+                      : 'bg-[#ecfdf5] text-[#166534] border-[#bbf7d0]'
+                  }`}
+                >
+                  {b.status}
+                </span>
+              </div>
+
+              <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                <div>
+                  <h3 className="text-base sm:text-lg font-bold text-[#0d3d3a]">
+                    {b.title}
+                  </h3>
+
+                  <div className="flex flex-wrap items-center gap-x-6 gap-y-1 mt-2 text-xs">
+                    {b.details.map((d) => (
+                      <div key={d.label} className="flex flex-col">
+                        <span className="text-[10px] font-bold text-[#889593] uppercase tracking-wider">
+                          {d.label}
+                        </span>
+                        <span className="font-medium text-[#192524] mt-0.5">
+                          {d.value}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Card Action Buttons */}
+                <div className="flex items-center gap-2 pt-2 lg:pt-0">
+                  {b.hasRefundAlert ? (
+                    <Link
+                      to={`/refunds/${b.refundCaseId}`}
+                      className="bg-[#0d6b63] text-white px-4 py-2 rounded-md text-xs font-semibold hover:bg-[#0a534d] transition-colors shadow-sm"
+                    >
+                      Check Refund Eligibility
+                    </Link>
+                  ) : (
+                    <button
+                      onClick={() => setSelectedBookingDetails(b)}
+                      className="bg-white border border-[#0d6b63] text-[#0d6b63] px-4 py-2 rounded-md text-xs font-semibold hover:bg-[#e8f2f0] transition-colors"
+                    >
+                      Manage booking
+                    </button>
+                  )}
+
+                  <button
+                    onClick={() => setSelectedBookingDetails(b)}
+                    className="text-[#6b7775] hover:text-[#0d3d3a] px-3 py-2 text-xs font-medium"
+                  >
+                    View details
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))}
+
+          {filteredBookings.length === 0 && (
+            <div className="bg-white rounded-xl border border-[#e3ded4] p-12 text-center text-[#6b7775]">
+              <span className="material-symbols-outlined text-[36px] text-[#889593] mb-2 block">
+                inbox
+              </span>
+              <p className="text-sm font-semibold text-[#0d3d3a]">No bookings found</p>
+              <p className="text-xs text-[#6b7775] mt-1">Try switching tabs or book a new trip above.</p>
+            </div>
+          )}
+        </div>
+
+        {/* BOTTOM HELPFUL CARDS (Page 8) */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 pb-8">
+          {/* AI Refund Assistance Card */}
+          <div className="bg-[#f0ebe1] rounded-xl border border-[#e3ded4] p-5 sm:p-6 space-y-3 flex flex-col justify-between">
+            <div className="space-y-1.5">
+              <h3 className="text-base font-bold text-[#0d3d3a]">
+                AI-powered refund assistance
+              </h3>
+              <p className="text-xs text-[#5c6967] leading-relaxed">
+                If any booking is cancelled or disrupted, our AI helps you check refund
+                eligibility, understand applicable policies and track your claim.
+              </p>
+              <p className="text-[11px] text-[#889593]">
+                Refund eligibility and amounts depend on your booking, applicable policies and provider decisions.
+              </p>
             </div>
 
-            {/* Status Dropdown */}
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value as any)}
-              className="bg-surface-container-low text-on-surface font-label-md text-xs sm:text-sm px-space-md py-2 rounded-full focus:outline-none border border-surface-container cursor-pointer"
+            <Link
+              to="/refunds"
+              className="inline-flex items-center gap-1.5 text-xs font-bold text-[#0d6b63] hover:underline pt-2"
             >
-              <option value="all">All Disruption Statuses</option>
-              <option value="disrupted">Disrupted / Flagged Only</option>
-              <option value="ontime">On-Time Bookings</option>
-            </select>
+              Check Refund Eligibility →
+            </Link>
+          </div>
+
+          {/* Need To Make Changes Card */}
+          <div className="bg-white rounded-xl border border-[#e3ded4] p-5 sm:p-6 space-y-3 flex flex-col justify-between">
+            <div className="space-y-1.5">
+              <h3 className="text-base font-bold text-[#0d3d3a]">
+                Need to make changes?
+              </h3>
+              <p className="text-xs text-[#5c6967] leading-relaxed">
+                Manage your trip, change dates or review cancellation options for any booking.
+                Our team and AI assistant are available 24/7.
+              </p>
+            </div>
+
+            <div>
+              <Link
+                to="/help"
+                className="inline-block bg-white border border-[#e3ded4] text-[#0d3d3a] px-4 py-2 rounded-md text-xs font-semibold hover:bg-[#f7f4ed] transition-colors"
+              >
+                Visit help centre
+              </Link>
+            </div>
           </div>
         </div>
 
-        {/* Mode Filter Pills */}
-        <div className="flex items-center gap-space-xs overflow-x-auto pb-space-xs">
-          <button
-            onClick={() => setSelectedMode('all')}
-            className={`px-4 py-1.5 rounded-full font-label-md text-xs font-bold whitespace-nowrap transition-all cursor-pointer ${
-              selectedMode === 'all'
-                ? 'bg-gradient-to-r from-[#006D77] to-[#20B8B0] text-white shadow-xs'
-                : 'bg-[#f0f5f7] hover:bg-[#e7eff2] text-[#0d283e]'
-            }`}
-            type="button"
-          >
-            All Modes (1,428)
-          </button>
-          <button
-            onClick={() => setSelectedMode('flight')}
-            className={`px-4 py-1.5 rounded-full font-label-md text-xs font-bold whitespace-nowrap transition-all cursor-pointer flex items-center gap-1.5 ${
-              selectedMode === 'flight'
-                ? 'bg-gradient-to-r from-[#006D77] to-[#20B8B0] text-white shadow-xs'
-                : 'bg-[#f0f5f7] hover:bg-[#e7eff2] text-[#0d283e]'
-            }`}
-            type="button"
-          >
-            <span className="material-symbols-outlined text-[16px]">flight</span>
-            <span>Flights (942)</span>
-          </button>
-          <button
-            onClick={() => setSelectedMode('train')}
-            className={`px-4 py-1.5 rounded-full font-label-md text-xs font-bold whitespace-nowrap transition-all cursor-pointer flex items-center gap-1.5 ${
-              selectedMode === 'train'
-                ? 'bg-gradient-to-r from-[#006D77] to-[#20B8B0] text-white shadow-xs'
-                : 'bg-[#f0f5f7] hover:bg-[#e7eff2] text-[#0d283e]'
-            }`}
-            type="button"
-          >
-            <span className="material-symbols-outlined text-[16px]">train</span>
-            <span>Rail / Trains (364)</span>
-          </button>
-          <button
-            onClick={() => setSelectedMode('bus')}
-            className={`px-4 py-1.5 rounded-full font-label-md text-xs font-bold whitespace-nowrap transition-all cursor-pointer flex items-center gap-1.5 ${
-              selectedMode === 'bus'
-                ? 'bg-gradient-to-r from-[#006D77] to-[#20B8B0] text-white shadow-xs'
-                : 'bg-[#f0f5f7] hover:bg-[#e7eff2] text-[#0d283e]'
-            }`}
-            type="button"
-          >
-            <span className="material-symbols-outlined text-[16px]">directions_bus</span>
-            <span>Intercity Buses (122)</span>
-          </button>
-        </div>
+        {/* Modal for Booking Details */}
+        {selectedBookingDetails && (
+          <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
+            <div className="bg-white rounded-2xl max-w-md w-full border border-[#e3ded4] p-6 space-y-4 shadow-2xl animate-fade-in text-left">
+              <div className="flex items-center justify-between pb-3 border-b border-[#e3ded4]">
+                <div>
+                  <span className="font-mono text-xs text-[#6b7775]">
+                    {selectedBookingDetails.refLabel}
+                  </span>
+                  <h3 className="text-lg font-bold text-[#0d3d3a]">
+                    {selectedBookingDetails.title}
+                  </h3>
+                </div>
+                <button
+                  onClick={() => setSelectedBookingDetails(null)}
+                  className="text-[#6b7775] hover:text-black p-1"
+                >
+                  <span className="material-symbols-outlined text-[20px]">close</span>
+                </button>
+              </div>
 
-        {/* Bookings Ledger Table */}
-        <div className="overflow-x-auto">
-          <table className="w-full text-left font-body-sm text-xs sm:text-sm">
-            <thead>
-              <tr className="font-label-sm text-[11px] text-on-surface-variant uppercase tracking-wider bg-surface-container-low rounded-xl">
-                <th className="py-space-md px-space-md rounded-l-xl">PNR / Booking Ref</th>
-                <th className="py-space-md px-space-md">Traveler</th>
-                <th className="py-space-md px-space-md">Carrier & Route</th>
-                <th className="py-space-md px-space-md">Journey Date</th>
-                <th className="py-space-md px-space-md">Fare Paid</th>
-                <th className="py-space-md px-space-md">Flight/Trip Status</th>
-                <th className="py-space-md px-space-md">Refund Audit Status</th>
-                <th className="py-space-md px-space-md rounded-r-xl text-right">Investigation Action</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-surface-container-high/40">
-              {filteredBookings.map((item) => (
-                <tr key={item.id} className="hover:bg-surface-container-low/60 transition-colors">
-                  {/* PNR */}
-                  <td className="py-space-md px-space-md">
-                    <div className="flex flex-col">
-                      <span className="font-headline-sm text-sm font-bold text-on-surface">PNR: {item.pnr}</span>
-                      <span className="font-code-sm text-[11px] text-on-surface-variant">{item.bookingRef}</span>
-                    </div>
-                  </td>
+              <div className="space-y-2 text-xs">
+                {selectedBookingDetails.details.map((d) => (
+                  <div key={d.label} className="flex justify-between py-1 border-b border-[#f0ebe1]">
+                    <span className="text-[#889593]">{d.label}</span>
+                    <span className="font-semibold text-[#0d3d3a]">{d.value}</span>
+                  </div>
+                ))}
+                <div className="flex justify-between py-1 border-b border-[#f0ebe1]">
+                  <span className="text-[#889593]">Status</span>
+                  <span className="font-semibold text-[#166534]">{selectedBookingDetails.status}</span>
+                </div>
+              </div>
 
-                  {/* Traveler */}
-                  <td className="py-space-md px-space-md">
-                    <div className="flex items-center gap-space-sm">
-                      <div
-                        className={`w-8 h-8 rounded-full ${item.traveler.color} font-label-sm text-xs flex items-center justify-center font-bold`}
-                      >
-                        {item.traveler.initials}
-                      </div>
-                      <div className="flex flex-col">
-                        <span className="font-label-md text-xs font-semibold text-on-surface">
-                          {item.traveler.name}
-                        </span>
-                        <span className="font-label-sm text-[11px] text-on-surface-variant">
-                          {item.traveler.tier}
-                        </span>
-                      </div>
-                    </div>
-                  </td>
-
-                  {/* Carrier & Route */}
-                  <td className="py-space-md px-space-md">
-                    <div className="flex items-center gap-space-xs">
-                      <span className="p-1.5 rounded-lg bg-surface-container text-on-surface">
-                        <span className="material-symbols-outlined text-[16px]">
-                          {item.carrier.type === 'train'
-                            ? 'train'
-                            : item.carrier.type === 'bus'
-                            ? 'directions_bus'
-                            : 'flight'}
-                        </span>
-                      </span>
-                      <div className="flex flex-col">
-                        <span className="font-medium text-on-surface text-xs sm:text-sm">
-                          {item.carrier.name} ({item.carrier.code})
-                        </span>
-                        <span className="text-[11px] text-on-surface-variant">{item.carrier.route}</span>
-                      </div>
-                    </div>
-                  </td>
-
-                  {/* Journey Date */}
-                  <td className="py-space-md px-space-md">
-                    <div className="flex flex-col">
-                      <span className="text-on-surface font-medium text-xs sm:text-sm">{item.journeyDate}</span>
-                      <span className="text-[11px] text-on-surface-variant">Seat: {item.carrier.seat}</span>
-                    </div>
-                  </td>
-
-                  {/* Fare */}
-                  <td className="py-space-md px-space-md">
-                    <span className="font-semibold text-on-surface">{item.amountFormatted}</span>
-                  </td>
-
-                  {/* Trip Status */}
-                  <td className="py-space-md px-space-md">
-                    <span
-                      className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full font-label-sm text-xs font-semibold ${
-                        item.status.includes('Cancelled')
-                          ? 'bg-error-container text-on-error-container'
-                          : item.status.includes('Delay') || item.status.includes('Grounded') || item.status.includes('Missed')
-                          ? 'bg-amber-100 text-amber-900'
-                          : 'bg-primary-fixed/40 text-on-primary-fixed-variant'
-                      }`}
-                    >
-                      <span
-                        className={`w-1.5 h-1.5 rounded-full ${
-                          item.status.includes('Cancelled')
-                            ? 'bg-error'
-                            : item.status.includes('Delay')
-                            ? 'bg-amber-600'
-                            : 'bg-primary'
-                        }`}
-                      ></span>
-                      {item.status}
-                    </span>
-                  </td>
-
-                  {/* Refund Audit Status */}
-                  <td className="py-space-md px-space-md">
-                    <span
-                      className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full font-label-sm text-xs font-semibold ${
-                        item.refundStatus === 'Full Refund Eligible' || item.refundStatus === 'Disbursed'
-                          ? 'bg-primary-container/30 text-primary font-bold'
-                          : item.refundStatus === 'In Review' || item.refundStatus === 'Under Investigation'
-                          ? 'bg-secondary-fixed text-on-secondary-fixed'
-                          : item.refundStatus === 'TDR Auto-Filed'
-                          ? 'bg-secondary-fixed-dim/40 text-on-secondary-fixed-variant'
-                          : 'bg-surface-container text-on-surface-variant'
-                      }`}
-                    >
-                      {item.refundStatus}
-                    </span>
-                  </td>
-
-                  {/* Action */}
-                  <td className="py-space-md px-space-md text-right">
-                    {item.relatedInvestigationId ? (
-                      <button
-                        onClick={() => handleInspectRefund(item.relatedInvestigationId!)}
-                        className="px-space-md py-1.5 rounded-full bg-gradient-to-r from-[#006D77] to-[#20B8B0] hover:from-[#005a63] hover:to-[#1aa39b] text-white font-label-md text-xs font-bold transition-all cursor-pointer whitespace-nowrap shadow-xs hover:shadow-sm"
-                        type="button"
-                      >
-                        Inspect Refund
-                      </button>
-                    ) : (
-                      <button
-                        onClick={() => alert(`PNR ${item.pnr} itinerary is on-time. No disruption claim detected.`)}
-                        className="px-space-md py-1.5 rounded-full bg-surface-container hover:bg-surface-container-high text-on-surface-variant font-label-md text-xs font-semibold transition-all cursor-pointer whitespace-nowrap"
-                        type="button"
-                      >
-                        Audit Policy
-                      </button>
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-
-        {/* Pagination Footer */}
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-space-sm pt-space-xs border-t border-surface-container">
-          <span className="font-body-sm text-xs text-on-surface-variant">
-            Showing <strong className="text-on-surface font-semibold">1–{filteredBookings.length}</strong> of 1,428 monitored travel bookings
-          </span>
-          <div className="flex items-center gap-space-xs">
-            <button
-              className="flex items-center justify-center w-8 h-8 rounded-full bg-surface-container text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors disabled:opacity-40"
-              disabled
-              type="button"
-            >
-              <span className="material-symbols-outlined text-[18px]">chevron_left</span>
-            </button>
-            <span className="px-3 py-1 rounded-full bg-primary-container text-on-primary-container font-label-sm text-xs font-bold">
-              1
-            </span>
-            <button
-              className="px-3 py-1 rounded-full bg-surface-container hover:bg-surface-container-high text-on-surface font-label-sm text-xs transition-colors cursor-pointer"
-              type="button"
-            >
-              2
-            </button>
-            <button
-              className="px-3 py-1 rounded-full bg-surface-container hover:bg-surface-container-high text-on-surface font-label-sm text-xs transition-colors cursor-pointer"
-              type="button"
-            >
-              3
-            </button>
-            <button
-              className="flex items-center justify-center w-8 h-8 rounded-full bg-surface-container text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors cursor-pointer"
-              type="button"
-            >
-              <span className="material-symbols-outlined text-[18px]">chevron_right</span>
-            </button>
+              <div className="pt-2 flex justify-end gap-2">
+                <button
+                  onClick={() => setSelectedBookingDetails(null)}
+                  className="bg-[#0d6b63] text-white px-4 py-2 rounded-md text-xs font-semibold hover:bg-[#0a534d]"
+                >
+                  Done
+                </button>
+              </div>
+            </div>
           </div>
-        </div>
-      </section>
+        )}
+      </main>
+
+      <SiteFooter />
     </div>
   );
 };

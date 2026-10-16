@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useInvestigation } from '../context/InvestigationContext';
 import { RiskBadge } from '../components/common/RiskBadge';
 import { StatusBadge } from '../components/common/StatusBadge';
+import { ReviewerHeader } from '../components/layout/ReviewerHeader';
 
 export const RefundInvestigationsPage: React.FC = () => {
   const navigate = useNavigate();
@@ -54,7 +55,9 @@ export const RefundInvestigationsPage: React.FC = () => {
   });
 
   return (
-    <div className="flex flex-col w-full gap-space-xl pb-16 text-left">
+    <div className="min-h-screen bg-[#f7f4ed] flex flex-col font-sans text-[#192524] antialiased">
+      <ReviewerHeader />
+      <div className="flex-1 w-full site-container py-6 flex flex-col gap-space-xl pb-16 text-left">
       {/* Toast Notification */}
       {actionSuccessMsg && (
         <div className="fixed top-20 right-6 z-50 p-4 rounded-2xl bg-primary-container text-on-primary-container font-semibold shadow-2xl flex items-center gap-3 animate-fade-in border border-primary">
@@ -436,6 +439,7 @@ export const RefundInvestigationsPage: React.FC = () => {
           </div>
         </div>
       </section>
+      </div>
     </div>
   );
 };

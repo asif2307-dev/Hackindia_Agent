@@ -1,745 +1,811 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useLanguage } from '../context/LanguageContext';
-import { TransportIllustration, TransportMode } from '../components/common/TransportIllustration';
-import { YatraHeader } from '../components/travel/YatraHeader';
-import { AiRefundHero } from '../components/travel/AiRefundHero';
-import { FestiveHeroBackground } from '../components/travel/FestiveHeroBackground';
-import { AiSearchBar } from '../components/travel/AiSearchBar';
-import { MultiServiceBookingPanel, ServiceTab } from '../components/travel/MultiServiceBookingPanel';
-import { PromotionalOffers } from '../components/travel/PromotionalOffers';
-import { PopularDestinations } from '../components/travel/PopularDestinations';
-import { AiChatbotDrawer } from '../components/travel/AiChatbotDrawer';
+import React, { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { SiteHeader } from '../components/layout/SiteHeader';
+import { SiteFooter } from '../components/layout/SiteFooter';
+
+type ServiceType = 'flights' | 'hotels' | 'holidays' | 'bus' | 'trains' | 'cabs';
 
 export const LandingPage: React.FC = () => {
   const navigate = useNavigate();
-  const { t } = useLanguage();
+  const [activeService, setActiveService] = useState<ServiceType>('flights');
 
-  // Booking panel and AI Search State
-  const [bookingTab, setBookingTab] = useState<ServiceTab>('flights');
-  const [searchFrom, setSearchFrom] = useState<string>('Delhi');
-  const [searchTo, setSearchTo] = useState<string>('Mumbai');
+  // Flight form state
+  const [fromCity, setFromCity] = useState('Delhi (DEL)');
+  const [toCity, setToCity] = useState('Mumbai (BOM)');
+  const [departDate, setDepartDate] = useState('2026-10-24');
+  const [returnDate, setReturnDate] = useState('2026-10-30');
+  const [travellers, setTravellers] = useState('1 Traveller · Economy');
 
-  // Mode state for the preserved Transport Illustration inside How It Works
-  const [selectedMode, setSelectedMode] = useState<TransportMode>('flights');
-  const [activeSection, setActiveSection] = useState<string>('booking-hero');
+  // Hotel form state
+  const [hotelCity, setHotelCity] = useState('Goa, India');
+  const [checkIn, setCheckIn] = useState('2026-12-12');
+  const [checkOut, setCheckOut] = useState('2026-12-16');
+  const [guests, setGuests] = useState('2 Guests · 1 Room');
 
-  const modeData = {
-    flights: {
-      fromIcon: 'flight_takeoff',
-      toIcon: 'flight_land',
-      fromCity: 'Delhi',
-      fromCode: 'DEL',
-      toCity: 'Mumbai',
-      toCode: 'BOM',
-    },
-    trains: {
-      fromIcon: 'train',
-      toIcon: 'directions_railway',
-      fromCity: 'New Delhi',
-      fromCode: 'NDLS',
-      toCity: 'Mumbai Central',
-      toCode: 'MMCT',
-    },
-    buses: {
-      fromIcon: 'directions_bus',
-      toIcon: 'directions_bus',
-      fromCity: 'Delhi ISBT',
-      fromCode: 'ISBT',
-      toCity: 'Mumbai Borivali',
-      toCode: 'BVI',
-    },
-  };
+  // Train form state
+  const [trainFrom, setTrainFrom] = useState('New Delhi (NDLS)');
+  const [trainTo, setTrainTo] = useState('Jaipur (JP)');
+  const [trainDate, setTrainDate] = useState('2026-11-02');
+  const [trainClass, setTrainClass] = useState('All Classes');
 
-  const handleModeChange = (mode: TransportMode) => {
-    setSelectedMode(mode);
-  };
+  // Bus form state
+  const [busFrom, setBusFrom] = useState('Bengaluru');
+  const [busTo, setBusTo] = useState('Goa');
+  const [busDate, setBusDate] = useState('2026-11-06');
 
-  // Scrollspy effect
-  useEffect(() => {
-    const handleScroll = () => {
-      const scrollPosition = window.scrollY + 160;
-      const sections = [
-        { id: 'booking-hero', offset: document.getElementById('booking-hero')?.offsetTop || 0 },
-        { id: 'how-it-works', offset: document.getElementById('how-it-works')?.offsetTop || 0 },
-        { id: 'features', offset: document.getElementById('features')?.offsetTop || 0 },
-        { id: 'refund-engine', offset: document.getElementById('refund-engine')?.offsetTop || 0 },
-        { id: 'special-offers', offset: document.getElementById('special-offers')?.offsetTop || 0 },
-        { id: 'destinations', offset: document.getElementById('destinations')?.offsetTop || 0 },
-      ];
+  // Cab form state
+  const [cabPickup, setCabPickup] = useState('Delhi Airport (DEL)');
+  const [cabDrop, setCabDrop] = useState('Connaught Place');
+  const [cabDate, setCabDate] = useState('2026-10-24 08:30');
 
-      const sortedSections = [...sections].sort((a, b) => b.offset - a.offset);
-      for (const section of sortedSections) {
-        if (scrollPosition >= section.offset - 60) {
-          setActiveSection(section.id);
-          break;
-        }
-      }
-    };
+  // Holiday form state
+  const [holidayFrom, setHolidayFrom] = useState('Delhi');
+  const [holidayDest, setHolidayDest] = useState('Kashmir');
 
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    handleScroll();
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
-
-  // Hash link smooth scroll handling on load
-  useEffect(() => {
-    if (window.location.hash) {
-      const sectionId = window.location.hash.replace('#', '');
-      const el = document.getElementById(sectionId);
-      if (el) {
-        setTimeout(() => {
-          const headerOffset = 80;
-          const elementPosition = el.getBoundingClientRect().top;
-          const offsetPosition = Math.max(0, elementPosition + window.scrollY - headerOffset);
-          window.scrollTo({
-            top: offsetPosition,
-            behavior: 'smooth',
-          });
-          setActiveSection(sectionId);
-        }, 100);
-      }
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (activeService === 'flights') {
+      navigate('/flights');
+    } else if (activeService === 'hotels') {
+      navigate('/hotels');
+    } else if (activeService === 'trains') {
+      navigate('/trains');
+    } else if (activeService === 'bus') {
+      navigate('/buses');
+    } else if (activeService === 'cabs') {
+      navigate('/cabs');
+    } else if (activeService === 'holidays') {
+      navigate('/holidays');
     }
-  }, []);
-
-  const scrollToSection = (sectionId: string) => {
-    if (sectionId === 'booking-hero') {
-      window.scrollTo({
-        top: 0,
-        behavior: 'smooth',
-      });
-      setActiveSection('booking-hero');
-      return;
-    }
-
-    const el = document.getElementById(sectionId);
-    if (el) {
-      const headerOffset = 80;
-      const elementPosition = el.getBoundingClientRect().top;
-      const offsetPosition = Math.max(0, elementPosition + window.scrollY - headerOffset);
-      window.scrollTo({
-        top: offsetPosition,
-        behavior: 'smooth',
-      });
-      setActiveSection(sectionId);
-    }
-  };
-
-  // Callback from AI Search Bar to auto-configure booking tabs
-  const handleAiParsedQuery = (tab: string, from?: string, to?: string) => {
-    const validTabs: ServiceTab[] = ['flights', 'hotels', 'holidays', 'bus', 'trains', 'cabs'];
-    const mappedTab = tab === 'buses' ? 'bus' : tab;
-    if (validTabs.includes(mappedTab as ServiceTab)) {
-      setBookingTab(mappedTab as ServiceTab);
-    }
-    if (from) setSearchFrom(from);
-    if (to) setSearchTo(to);
-    scrollToSection('booking-hero');
-  };
-
-  // Callback from Promotional Offers category selection
-  const handleCategorySelect = (category: string) => {
-    const validTabs: ServiceTab[] = ['flights', 'hotels', 'holidays', 'bus', 'trains', 'cabs'];
-    const mapped = category === 'buses' ? 'bus' : category;
-    if (validTabs.includes(mapped as ServiceTab)) {
-      setBookingTab(mapped as ServiceTab);
-    }
-    scrollToSection('booking-hero');
-  };
-
-  // Callback from Popular Destinations
-  const handleDestinationSelect = (cityName: string) => {
-    setSearchFrom('Delhi');
-    setSearchTo(cityName);
-    setBookingTab('flights');
-    scrollToSection('booking-hero');
   };
 
   return (
-    <div className="bg-[#fcfcfd] font-sans text-gray-900 antialiased min-h-screen flex flex-col selection:bg-[#006D77] selection:text-white">
-      {/* 1. Header & Navigation with Language Selector */}
-      <YatraHeader
-        activeSection={activeSection}
-        onNavigateSection={scrollToSection}
-      />
+    <div className="min-h-screen bg-[#f7f4ed] flex flex-col font-sans text-[#192524] antialiased">
+      <SiteHeader />
 
-      {/* Main Body Content */}
-      <main className="flex-1 w-full">
-        {/* Position 1: Continuous Beach Hero Background enclosing AI Refund Hero + Travel Booking UI */}
-        <section id="booking-hero" className="w-full relative scroll-mt-20">
-          <FestiveHeroBackground>
-            {/* 1. AI Refund Hero Section (transparent over beach background) */}
-            <AiRefundHero />
-
-            {/* 2. Wide Rounded AI Travel Search Bar */}
-            <AiSearchBar onAiParsedQuery={handleAiParsedQuery} />
-
-            {/* 3. 6-Service Travel Booking Panel */}
-            <MultiServiceBookingPanel
-              currentTab={bookingTab}
-              initialFrom={searchFrom}
-              initialTo={searchTo}
-              onTabChange={(tab) => setBookingTab(tab)}
-            />
-          </FestiveHeroBackground>
-        </section>
-
-        {/* 3. Position 2 (Second Position / Slide): SIMPLIFIED HOW IT WORKS SECTION */}
-        <section id="how-it-works" className="w-full bg-[#f8fbfa] py-16 sm:py-20 scroll-mt-20 border-b border-[#C2EAE7]/70">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col gap-12">
-            {/* Header */}
-            <div className="text-center max-w-3xl mx-auto flex flex-col gap-2">
-              <div className="inline-flex items-center justify-center gap-1.5 px-3.5 py-1 rounded-full bg-[#EAF8F7] text-[#006D77] text-xs font-bold uppercase tracking-wider mx-auto border border-[#C2EAE7]">
-                <span className="material-symbols-outlined text-[15px] text-[#20B8B0]">offline_bolt</span>
-                <span>{t('howItWorks.badge', 'Simple 4-Step Process')}</span>
+      <main className="flex-1 w-full text-left">
+        {/* HERO SECTION (Page 1) */}
+        <section className="site-container pt-8 pb-10 sm:pt-12 sm:pb-14">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
+            {/* Left Content */}
+            <div className="lg:col-span-7 space-y-5">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#e8f2f0] border border-[#d0dfd3] text-[#0d6b63] text-xs font-bold tracking-wide uppercase">
+                <span className="w-2 h-2 rounded-full bg-[#0d6b63]"></span>
+                AI-Powered Travel Refund Assistance
               </div>
-              <h2 className="text-3xl sm:text-4xl font-extrabold text-[#17324D] tracking-tight font-['Plus_Jakarta_Sans'] leading-tight">
-                {t('howItWorks.title', 'How Agent Travel Works')}
-              </h2>
-              <p className="text-sm sm:text-base text-gray-600 font-normal leading-relaxed max-w-2xl mx-auto">
-                {t('howItWorks.subtitle', 'A clear, transparent way to book travel and resolve disruption refunds with zero hassle.')}
+
+              <h1 className="text-4xl sm:text-5xl lg:text-[54px] font-bold text-[#0d3d3a] tracking-tight leading-[1.12]">
+                Your Journey, Made <br className="hidden sm:inline" />
+                Simpler.
+              </h1>
+
+              <p className="text-[#5c6967] text-base sm:text-lg leading-relaxed max-w-2xl">
+                Book flights, hotels, trains, buses and more in one place. If your
+                booking is cancelled or disrupted, our AI helps you check refund
+                eligibility, understand applicable policies and track your claim.
+              </p>
+
+              <div className="flex flex-wrap items-center gap-3 pt-2">
+                <Link
+                  to="/refunds"
+                  className="bg-[#0d6b63] text-white px-5 py-2.5 rounded-md text-sm font-semibold hover:bg-[#0a534d] transition-colors shadow-sm flex items-center gap-1.5"
+                >
+                  Check Refund Eligibility
+                </Link>
+                <a
+                  href="#booking-panel"
+                  className="border border-[#0d6b63] text-[#0d6b63] bg-white/60 px-5 py-2.5 rounded-md text-sm font-semibold hover:bg-[#e8f2f0] transition-colors"
+                >
+                  Explore Travel
+                </a>
+              </div>
+
+              <p className="text-xs text-[#889593] leading-relaxed pt-1 max-w-xl">
+                Refund eligibility and amounts depend on your booking, applicable policies and provider decisions.
               </p>
             </div>
 
-            {/* 4 Clean Steps Stepper Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 text-left relative">
-              {/* Step 1: Book Your Trip */}
-              <div className="relative p-6 sm:p-7 rounded-3xl bg-white shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col justify-between border border-[#C2EAE7] group">
-                {/* Connecting arrow indicator on desktop */}
-                <div className="hidden lg:block absolute -right-3.5 top-1/2 -translate-y-1/2 z-10 w-7 h-7 rounded-full bg-[#EAF8F7] text-[#006D77] border border-[#20B8B0] flex items-center justify-center shadow-sm">
-                  <span className="material-symbols-outlined text-[16px] font-bold">arrow_forward</span>
-                </div>
-
-                <div>
-                  <div className="flex items-center justify-between mb-4">
-                    <span className="w-10 h-10 rounded-2xl bg-[#EAF8F7] text-[#006D77] font-black text-sm flex items-center justify-center border border-[#C2EAE7]">
-                      {t('howItWorks.step1Num', '01')}
+            {/* Right Hero Image (Kashmir photo from PDF mockup) */}
+            <div className="lg:col-span-5 relative">
+              <div className="relative rounded-2xl overflow-hidden border border-[#e3ded4] shadow-md bg-white aspect-[4/3] sm:aspect-[16/11] lg:h-[360px] xl:h-[400px]">
+                <img
+                  src="https://images.unsplash.com/photo-1595815771614-ade9d652a65d?auto=format&fit=crop&w=1200&q=80"
+                  alt="Kashmir Dal Lake and mountains"
+                  className="w-full h-full object-cover"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent flex items-end p-5">
+                  <div className="text-white">
+                    <span className="text-[11px] font-semibold uppercase tracking-wider text-[#d0dfd3] block">
+                      Featured Destination
                     </span>
-                    <span className="w-12 h-12 rounded-2xl bg-[#006D77]/10 text-[#006D77] flex items-center justify-center group-hover:scale-110 transition-transform">
-                      <span className="material-symbols-outlined text-[28px]">flight_takeoff</span>
-                    </span>
+                    <h3 className="text-xl font-bold tracking-tight">Kashmir · Valley of Lakes</h3>
+                    <p className="text-xs text-white/80 mt-0.5">Explore serene waters, snow-capped ridges and shikara stays</p>
                   </div>
-                  <h3 className="text-lg font-bold text-[#17324D] tracking-tight font-['Plus_Jakarta_Sans']">
-                    {t('howItWorks.step1Title', 'Book Your Trip')}
-                  </h3>
-                  <p className="text-xs sm:text-sm text-gray-600 font-normal mt-2 leading-relaxed">
-                    {t('howItWorks.step1Desc', 'Book your flight, train, or bus through the supported booking workflow.')}
-                  </p>
-                </div>
-
-                <div className="mt-6 pt-4 border-t border-gray-100 flex items-center gap-2 text-[#006D77] text-xs font-bold">
-                  <span className="material-symbols-outlined text-[16px] text-[#20B8B0]">confirmation_number</span>
-                  <span>Instant Booking Sync</span>
-                </div>
-              </div>
-
-              {/* Step 2: We Monitor Disruptions */}
-              <div className="relative p-6 sm:p-7 rounded-3xl bg-white shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col justify-between border border-[#C2EAE7] group">
-                {/* Connecting arrow indicator on desktop */}
-                <div className="hidden lg:block absolute -right-3.5 top-1/2 -translate-y-1/2 z-10 w-7 h-7 rounded-full bg-[#EAF8F7] text-[#006D77] border border-[#20B8B0] flex items-center justify-center shadow-sm">
-                  <span className="material-symbols-outlined text-[16px] font-bold">arrow_forward</span>
-                </div>
-
-                <div>
-                  <div className="flex items-center justify-between mb-4">
-                    <span className="w-10 h-10 rounded-2xl bg-[#EAF8F7] text-[#006D77] font-black text-sm flex items-center justify-center border border-[#C2EAE7]">
-                      {t('howItWorks.step2Num', '02')}
-                    </span>
-                    <span className="w-12 h-12 rounded-2xl bg-amber-500/10 text-amber-600 flex items-center justify-center group-hover:scale-110 transition-transform">
-                      <span className="material-symbols-outlined text-[28px]">radar</span>
-                    </span>
-                  </div>
-                  <h3 className="text-lg font-bold text-[#17324D] tracking-tight font-['Plus_Jakarta_Sans']">
-                    {t('howItWorks.step2Title', 'We Monitor Disruptions')}
-                  </h3>
-                  <p className="text-xs sm:text-sm text-gray-600 font-normal mt-2 leading-relaxed">
-                    {t('howItWorks.step2Desc', 'The platform checks relevant travel disruption information where supported by configured data sources.')}
-                  </p>
-                </div>
-
-                <div className="mt-6 pt-4 border-t border-gray-100 flex items-center gap-2 text-amber-700 text-xs font-bold">
-                  <span className="material-symbols-outlined text-[16px] text-amber-500">notifications_active</span>
-                  <span>Live Telemetry Radar</span>
-                </div>
-              </div>
-
-              {/* Step 3: AI Checks Your Case */}
-              <div className="relative p-6 sm:p-7 rounded-3xl bg-white shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col justify-between border border-[#C2EAE7] group">
-                {/* Connecting arrow indicator on desktop */}
-                <div className="hidden lg:block absolute -right-3.5 top-1/2 -translate-y-1/2 z-10 w-7 h-7 rounded-full bg-[#EAF8F7] text-[#006D77] border border-[#20B8B0] flex items-center justify-center shadow-sm">
-                  <span className="material-symbols-outlined text-[16px] font-bold">arrow_forward</span>
-                </div>
-
-                <div>
-                  <div className="flex items-center justify-between mb-4">
-                    <span className="w-10 h-10 rounded-2xl bg-[#EAF8F7] text-[#006D77] font-black text-sm flex items-center justify-center border border-[#C2EAE7]">
-                      {t('howItWorks.step3Num', '03')}
-                    </span>
-                    <span className="w-12 h-12 rounded-2xl bg-[#20B8B0]/15 text-[#006D77] flex items-center justify-center group-hover:scale-110 transition-transform">
-                      <span className="material-symbols-outlined text-[28px]">psychology_alt</span>
-                    </span>
-                  </div>
-                  <h3 className="text-lg font-bold text-[#17324D] tracking-tight font-['Plus_Jakarta_Sans']">
-                    {t('howItWorks.step3Title', 'AI Checks Your Case')}
-                  </h3>
-                  <p className="text-xs sm:text-sm text-gray-600 font-normal mt-2 leading-relaxed">
-                    {t('howItWorks.step3Desc', 'The Refund Engine reviews the available booking and disruption information to help assess possible refund eligibility.')}
-                  </p>
-                </div>
-
-                <div className="mt-6 pt-4 border-t border-gray-100 flex items-center gap-2 text-[#006D77] text-xs font-bold">
-                  <span className="material-symbols-outlined text-[16px] text-[#20B8B0]">policy</span>
-                  <span>DGCA & Carrier Rules</span>
-                </div>
-              </div>
-
-              {/* Step 4: Track Your Refund (With Status Tracker Pill Sequence) */}
-              <div className="p-6 sm:p-7 rounded-3xl bg-white shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col justify-between border border-[#C2EAE7] group">
-                <div>
-                  <div className="flex items-center justify-between mb-4">
-                    <span className="w-10 h-10 rounded-2xl bg-[#EAF8F7] text-[#006D77] font-black text-sm flex items-center justify-center border border-[#C2EAE7]">
-                      {t('howItWorks.step4Num', '04')}
-                    </span>
-                    <span className="w-12 h-12 rounded-2xl bg-emerald-500/10 text-emerald-600 flex items-center justify-center group-hover:scale-110 transition-transform">
-                      <span className="material-symbols-outlined text-[28px]">payments</span>
-                    </span>
-                  </div>
-                  <h3 className="text-lg font-bold text-[#17324D] tracking-tight font-['Plus_Jakarta_Sans']">
-                    {t('howItWorks.step4Title', 'Track Your Refund')}
-                  </h3>
-                  <p className="text-xs sm:text-sm text-gray-600 font-normal mt-2 leading-relaxed">
-                    {t('howItWorks.step4Desc', 'View your claim status and the next steps through the available refund workflow.')}
-                  </p>
-
-                  {/* Visual Status Tracker Badges */}
-                  <div className="mt-4 p-2.5 rounded-2xl bg-[#f0f8f7] border border-[#C2EAE7]/70 flex flex-col gap-1.5">
-                    <div className="flex items-center justify-between text-[11px] font-bold">
-                      <span className="text-[#006D77] flex items-center gap-1">
-                        <span className="material-symbols-outlined text-[13px] text-emerald-600">check_circle</span>
-                        {t('howItWorks.statusSubmitted', 'Submitted')}
-                      </span>
-                      <span className="text-[#5A738E]">&rarr;</span>
-                      <span className="text-amber-700 flex items-center gap-1">
-                        <span className="material-symbols-outlined text-[13px] text-amber-500 animate-spin">sync</span>
-                        {t('howItWorks.statusReview', 'Under Review')}
-                      </span>
-                      <span className="text-[#5A738E]">&rarr;</span>
-                      <span className="text-emerald-700 font-extrabold flex items-center gap-1">
-                        <span className="material-symbols-outlined text-[13px] text-emerald-600">verified</span>
-                        {t('howItWorks.statusResolved', 'Resolved')}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="mt-6 pt-4 border-t border-gray-100 flex items-center gap-2 text-emerald-700 text-xs font-bold">
-                  <span className="material-symbols-outlined text-[16px] text-emerald-600">verified_user</span>
-                  <span>Real-time Claim Status</span>
                 </div>
               </div>
             </div>
+          </div>
+        </section>
 
-            {/* Clear Primary CTA Button Linking to Refund Engine */}
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+        {/* UNIVERSAL BOOKING PANEL (Page 1) */}
+        <section id="booking-panel" className="site-container pb-14">
+          <div className="bg-white rounded-xl border border-[#e3ded4] shadow-sm overflow-hidden">
+            {/* Service Tabs */}
+            <div className="flex items-center overflow-x-auto border-b border-[#e3ded4] bg-[#fbf9f4] px-4 pt-2">
               <button
                 type="button"
-                onClick={() => scrollToSection('refund-engine')}
-                className="inline-flex items-center gap-2.5 px-8 py-3.5 rounded-full bg-gradient-to-r from-[#006D77] via-[#007b86] to-[#00565E] hover:from-[#00565E] hover:to-[#004349] text-white font-extrabold text-sm sm:text-base tracking-wide shadow-lg hover:shadow-xl transition-all active:scale-95 cursor-pointer"
+                onClick={() => setActiveService('flights')}
+                className={`flex items-center gap-2 px-5 py-3 text-sm font-semibold transition-colors border-b-2 whitespace-nowrap ${
+                  activeService === 'flights'
+                    ? 'border-[#0d6b63] text-[#0d3d3a] bg-white rounded-t-lg'
+                    : 'border-transparent text-[#6b7775] hover:text-[#0d3d3a]'
+                }`}
               >
-                <span className="material-symbols-outlined text-[20px] text-[#E8B86D]">auto_fix_high</span>
-                <span>{t('howItWorks.cta', 'Check My Refund')}</span>
-                <span className="material-symbols-outlined text-[18px]">arrow_downward</span>
+                <span className="material-symbols-outlined text-[18px]">flight</span>
+                Flights
               </button>
 
               <button
                 type="button"
-                onClick={() => navigate('/refund-investigations/AT-9842')}
-                className="inline-flex items-center gap-2 px-6 py-3.5 rounded-full bg-white hover:bg-[#EAF8F7] text-[#17324D] font-bold text-xs sm:text-sm tracking-wide border border-[#C2EAE7] shadow-sm hover:shadow transition-all cursor-pointer"
+                onClick={() => setActiveService('hotels')}
+                className={`flex items-center gap-2 px-5 py-3 text-sm font-semibold transition-colors border-b-2 whitespace-nowrap ${
+                  activeService === 'hotels'
+                    ? 'border-[#0d6b63] text-[#0d3d3a] bg-white rounded-t-lg'
+                    : 'border-transparent text-[#6b7775] hover:text-[#0d3d3a]'
+                }`}
               >
-                <span className="material-symbols-outlined text-[18px] text-[#006D77]">visibility</span>
-                <span>View Sample Case (AT-9842)</span>
+                <span className="material-symbols-outlined text-[18px]">hotel</span>
+                Hotels
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setActiveService('holidays')}
+                className={`flex items-center gap-2 px-5 py-3 text-sm font-semibold transition-colors border-b-2 whitespace-nowrap ${
+                  activeService === 'holidays'
+                    ? 'border-[#0d6b63] text-[#0d3d3a] bg-white rounded-t-lg'
+                    : 'border-transparent text-[#6b7775] hover:text-[#0d3d3a]'
+                }`}
+              >
+                <span className="material-symbols-outlined text-[18px]">beach_access</span>
+                Holidays
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setActiveService('bus')}
+                className={`flex items-center gap-2 px-5 py-3 text-sm font-semibold transition-colors border-b-2 whitespace-nowrap ${
+                  activeService === 'bus'
+                    ? 'border-[#0d6b63] text-[#0d3d3a] bg-white rounded-t-lg'
+                    : 'border-transparent text-[#6b7775] hover:text-[#0d3d3a]'
+                }`}
+              >
+                <span className="material-symbols-outlined text-[18px]">directions_bus</span>
+                Bus
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setActiveService('trains')}
+                className={`flex items-center gap-2 px-5 py-3 text-sm font-semibold transition-colors border-b-2 whitespace-nowrap ${
+                  activeService === 'trains'
+                    ? 'border-[#0d6b63] text-[#0d3d3a] bg-white rounded-t-lg'
+                    : 'border-transparent text-[#6b7775] hover:text-[#0d3d3a]'
+                }`}
+              >
+                <span className="material-symbols-outlined text-[18px]">train</span>
+                Trains
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setActiveService('cabs')}
+                className={`flex items-center gap-2 px-5 py-3 text-sm font-semibold transition-colors border-b-2 whitespace-nowrap ${
+                  activeService === 'cabs'
+                    ? 'border-[#0d6b63] text-[#0d3d3a] bg-white rounded-t-lg'
+                    : 'border-transparent text-[#6b7775] hover:text-[#0d3d3a]'
+                }`}
+              >
+                <span className="material-symbols-outlined text-[18px]">local_taxi</span>
+                Cabs
               </button>
             </div>
 
-            {/* Interactive Dynamic Transport Illustration Preserved */}
-            <div className="w-full bg-white rounded-3xl p-6 sm:p-8 shadow-sm border border-[#C2EAE7] flex flex-col items-center">
-              <div className="flex flex-col sm:flex-row items-center justify-between w-full max-w-4xl mb-6 gap-4">
-                <div className="text-left">
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs font-bold text-[#006D77] uppercase tracking-wider block">
-                      {t('howItWorks.radarTitle', 'Live Transport Radar')}
-                    </span>
-                    <span className="text-xs font-bold text-[#17324D] bg-[#EAF8F7] px-2.5 py-0.5 rounded-full border border-[#C2EAE7]">
-                      {modeData[selectedMode].fromCity} [{modeData[selectedMode].fromCode}] &rarr; {modeData[selectedMode].toCity} [{modeData[selectedMode].toCode}]
-                    </span>
+            {/* Tab Form Content */}
+            <form onSubmit={handleSearch} className="p-5 sm:p-6">
+              {/* Flights Form */}
+              {activeService === 'flights' && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3 lg:gap-4 items-end">
+                  <div className="lg:col-span-1 border border-[#e3ded4] rounded-lg p-2.5 bg-[#fbf9f4]/60 hover:border-[#0d6b63] transition-colors">
+                    <label className="text-[11px] font-bold text-[#6b7775] uppercase tracking-wider block">
+                      From
+                    </label>
+                    <input
+                      type="text"
+                      value={fromCity}
+                      onChange={(e) => setFromCity(e.target.value)}
+                      className="w-full bg-transparent font-semibold text-[#0d3d3a] text-sm focus:outline-none pt-0.5"
+                    />
                   </div>
-                  <h4 className="text-xl font-black text-[#17324D] mt-0.5 font-['Plus_Jakarta_Sans']">
-                    {t('howItWorks.radarSubtitle', 'Multi-Modal Telemetry & Dispute Detection')}
-                  </h4>
-                </div>
 
-                {/* Mode Selector Pills (Flights, Trains, Buses) */}
-                <div className="flex items-center gap-1.5 p-1 bg-[#EAF8F7] rounded-full border border-[#C2EAE7]">
-                  {(['flights', 'trains', 'buses'] as TransportMode[]).map((mode) => (
-                    <button
-                      key={mode}
-                      onClick={() => handleModeChange(mode)}
-                      className={`px-4 py-1.5 rounded-full text-xs font-bold capitalize transition-all cursor-pointer ${
-                        selectedMode === mode
-                          ? 'bg-[#006D77] text-white shadow-md'
-                          : 'text-[#17324D] hover:text-[#006D77]'
-                      }`}
+                  <div className="lg:col-span-1 border border-[#e3ded4] rounded-lg p-2.5 bg-[#fbf9f4]/60 hover:border-[#0d6b63] transition-colors">
+                    <label className="text-[11px] font-bold text-[#6b7775] uppercase tracking-wider block">
+                      To
+                    </label>
+                    <input
+                      type="text"
+                      value={toCity}
+                      onChange={(e) => setToCity(e.target.value)}
+                      className="w-full bg-transparent font-semibold text-[#0d3d3a] text-sm focus:outline-none pt-0.5"
+                    />
+                  </div>
+
+                  <div className="lg:col-span-1 border border-[#e3ded4] rounded-lg p-2.5 bg-[#fbf9f4]/60 hover:border-[#0d6b63] transition-colors">
+                    <label className="text-[11px] font-bold text-[#6b7775] uppercase tracking-wider block">
+                      Departure
+                    </label>
+                    <input
+                      type="date"
+                      value={departDate}
+                      onChange={(e) => setDepartDate(e.target.value)}
+                      className="w-full bg-transparent font-semibold text-[#0d3d3a] text-sm focus:outline-none pt-0.5 cursor-pointer"
+                    />
+                  </div>
+
+                  <div className="lg:col-span-1 border border-[#e3ded4] rounded-lg p-2.5 bg-[#fbf9f4]/60 hover:border-[#0d6b63] transition-colors">
+                    <label className="text-[11px] font-bold text-[#6b7775] uppercase tracking-wider block">
+                      Return
+                    </label>
+                    <input
+                      type="date"
+                      value={returnDate}
+                      onChange={(e) => setReturnDate(e.target.value)}
+                      className="w-full bg-transparent font-semibold text-[#0d3d3a] text-sm focus:outline-none pt-0.5 cursor-pointer"
+                    />
+                  </div>
+
+                  <div className="lg:col-span-1 border border-[#e3ded4] rounded-lg p-2.5 bg-[#fbf9f4]/60 hover:border-[#0d6b63] transition-colors">
+                    <label className="text-[11px] font-bold text-[#6b7775] uppercase tracking-wider block">
+                      Travellers
+                    </label>
+                    <select
+                      value={travellers}
+                      onChange={(e) => setTravellers(e.target.value)}
+                      className="w-full bg-transparent font-semibold text-[#0d3d3a] text-xs focus:outline-none pt-1"
                     >
-                      {t(`tab.${mode === 'buses' ? 'bus' : mode}`, mode)}
+                      <option value="1 Traveller · Economy">1 Traveller · Economy</option>
+                      <option value="2 Travellers · Economy">2 Travellers · Economy</option>
+                      <option value="1 Traveller · Business">1 Traveller · Business</option>
+                      <option value="Family (2A + 2C)">Family (2A + 2C)</option>
+                    </select>
+                  </div>
+
+                  <div className="lg:col-span-1">
+                    <button
+                      type="submit"
+                      className="w-full h-[52px] bg-[#0d6b63] text-white font-semibold rounded-lg hover:bg-[#0a534d] transition-colors flex items-center justify-center gap-2 shadow-sm text-sm"
+                    >
+                      <span className="material-symbols-outlined text-[18px]">search</span>
+                      Search flights
                     </button>
-                  ))}
+                  </div>
                 </div>
-              </div>
+              )}
 
-              {/* Dynamic Transport Illustration Component */}
-              <div className="w-full max-w-4xl transition-all duration-300">
-                <TransportIllustration mode={selectedMode} />
-              </div>
+              {/* Hotels Form */}
+              {activeService === 'hotels' && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 lg:gap-4 items-end">
+                  <div className="lg:col-span-2 border border-[#e3ded4] rounded-lg p-2.5 bg-[#fbf9f4]/60">
+                    <label className="text-[11px] font-bold text-[#6b7775] uppercase tracking-wider block">
+                      City or Destination
+                    </label>
+                    <input
+                      type="text"
+                      value={hotelCity}
+                      onChange={(e) => setHotelCity(e.target.value)}
+                      className="w-full bg-transparent font-semibold text-[#0d3d3a] text-sm focus:outline-none pt-0.5"
+                    />
+                  </div>
+                  <div className="border border-[#e3ded4] rounded-lg p-2.5 bg-[#fbf9f4]/60">
+                    <label className="text-[11px] font-bold text-[#6b7775] uppercase tracking-wider block">
+                      Check-In
+                    </label>
+                    <input
+                      type="date"
+                      value={checkIn}
+                      onChange={(e) => setCheckIn(e.target.value)}
+                      className="w-full bg-transparent font-semibold text-[#0d3d3a] text-sm focus:outline-none pt-0.5"
+                    />
+                  </div>
+                  <div className="border border-[#e3ded4] rounded-lg p-2.5 bg-[#fbf9f4]/60">
+                    <label className="text-[11px] font-bold text-[#6b7775] uppercase tracking-wider block">
+                      Check-Out
+                    </label>
+                    <input
+                      type="date"
+                      value={checkOut}
+                      onChange={(e) => setCheckOut(e.target.value)}
+                      className="w-full bg-transparent font-semibold text-[#0d3d3a] text-sm focus:outline-none pt-0.5"
+                    />
+                  </div>
+                  <div className="border border-[#e3ded4] rounded-lg p-2.5 bg-[#fbf9f4]/60">
+                    <label className="text-[11px] font-bold text-[#6b7775] uppercase tracking-wider block">
+                      Guests & Rooms
+                    </label>
+                    <input
+                      type="text"
+                      value={guests}
+                      onChange={(e) => setGuests(e.target.value)}
+                      className="w-full bg-transparent font-semibold text-[#0d3d3a] text-sm focus:outline-none pt-0.5"
+                    />
+                  </div>
+                  <div>
+                    <button
+                      type="submit"
+                      className="w-full h-[52px] bg-[#0d6b63] text-white font-semibold rounded-lg hover:bg-[#0a534d] transition-colors flex items-center justify-center gap-2 text-sm shadow-sm"
+                    >
+                      <span className="material-symbols-outlined text-[18px]">search</span>
+                      Search hotels
+                    </button>
+                  </div>
+                </div>
+              )}
 
-              {/* Live Carrier Auditing Strip */}
-              <div className="mt-6 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-gray-500 text-xs sm:text-sm font-medium">
-                <span className="flex items-center gap-1.5 text-[#17324D] font-semibold">
-                  <span className="material-symbols-outlined text-[#006D77] text-[18px]">verified</span>
-                  Trusted coverage across 450+ airlines, rail networks, and bus operators worldwide
-                </span>
-              </div>
-            </div>
+              {/* Trains Form */}
+              {activeService === 'trains' && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 lg:gap-4 items-end">
+                  <div className="border border-[#e3ded4] rounded-lg p-2.5 bg-[#fbf9f4]/60">
+                    <label className="text-[11px] font-bold text-[#6b7775] uppercase tracking-wider block">
+                      From Station
+                    </label>
+                    <input
+                      type="text"
+                      value={trainFrom}
+                      onChange={(e) => setTrainFrom(e.target.value)}
+                      className="w-full bg-transparent font-semibold text-[#0d3d3a] text-sm focus:outline-none pt-0.5"
+                    />
+                  </div>
+                  <div className="border border-[#e3ded4] rounded-lg p-2.5 bg-[#fbf9f4]/60">
+                    <label className="text-[11px] font-bold text-[#6b7775] uppercase tracking-wider block">
+                      To Station
+                    </label>
+                    <input
+                      type="text"
+                      value={trainTo}
+                      onChange={(e) => setTrainTo(e.target.value)}
+                      className="w-full bg-transparent font-semibold text-[#0d3d3a] text-sm focus:outline-none pt-0.5"
+                    />
+                  </div>
+                  <div className="border border-[#e3ded4] rounded-lg p-2.5 bg-[#fbf9f4]/60">
+                    <label className="text-[11px] font-bold text-[#6b7775] uppercase tracking-wider block">
+                      Journey Date
+                    </label>
+                    <input
+                      type="date"
+                      value={trainDate}
+                      onChange={(e) => setTrainDate(e.target.value)}
+                      className="w-full bg-transparent font-semibold text-[#0d3d3a] text-sm focus:outline-none pt-0.5"
+                    />
+                  </div>
+                  <div className="border border-[#e3ded4] rounded-lg p-2.5 bg-[#fbf9f4]/60">
+                    <label className="text-[11px] font-bold text-[#6b7775] uppercase tracking-wider block">
+                      Travel Class
+                    </label>
+                    <select
+                      value={trainClass}
+                      onChange={(e) => setTrainClass(e.target.value)}
+                      className="w-full bg-transparent font-semibold text-[#0d3d3a] text-sm focus:outline-none pt-0.5"
+                    >
+                      <option value="All Classes">All Classes</option>
+                      <option value="Executive Chair Car (EC)">Executive Chair Car (EC)</option>
+                      <option value="AC Chair Car (CC)">AC Chair Car (CC)</option>
+                      <option value="Sleeper (SL)">Sleeper (SL)</option>
+                    </select>
+                  </div>
+                  <div>
+                    <button
+                      type="submit"
+                      className="w-full h-[52px] bg-[#0d6b63] text-white font-semibold rounded-lg hover:bg-[#0a534d] transition-colors flex items-center justify-center gap-2 text-sm shadow-sm"
+                    >
+                      <span className="material-symbols-outlined text-[18px]">search</span>
+                      Search trains
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Bus Form */}
+              {activeService === 'bus' && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4 items-end">
+                  <div className="border border-[#e3ded4] rounded-lg p-2.5 bg-[#fbf9f4]/60">
+                    <label className="text-[11px] font-bold text-[#6b7775] uppercase tracking-wider block">From City</label>
+                    <input type="text" value={busFrom} onChange={(e) => setBusFrom(e.target.value)} className="w-full bg-transparent font-semibold text-[#0d3d3a] text-sm focus:outline-none pt-0.5" />
+                  </div>
+                  <div className="border border-[#e3ded4] rounded-lg p-2.5 bg-[#fbf9f4]/60">
+                    <label className="text-[11px] font-bold text-[#6b7775] uppercase tracking-wider block">To City</label>
+                    <input type="text" value={busTo} onChange={(e) => setBusTo(e.target.value)} className="w-full bg-transparent font-semibold text-[#0d3d3a] text-sm focus:outline-none pt-0.5" />
+                  </div>
+                  <div className="border border-[#e3ded4] rounded-lg p-2.5 bg-[#fbf9f4]/60">
+                    <label className="text-[11px] font-bold text-[#6b7775] uppercase tracking-wider block">Date of Travel</label>
+                    <input type="date" value={busDate} onChange={(e) => setBusDate(e.target.value)} className="w-full bg-transparent font-semibold text-[#0d3d3a] text-sm focus:outline-none pt-0.5" />
+                  </div>
+                  <div>
+                    <button type="submit" className="w-full h-[52px] bg-[#0d6b63] text-white font-semibold rounded-lg hover:bg-[#0a534d] transition-colors flex items-center justify-center gap-2 text-sm shadow-sm">
+                      <span className="material-symbols-outlined text-[18px]">search</span>
+                      Search buses
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Cabs Form */}
+              {activeService === 'cabs' && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4 items-end">
+                  <div className="border border-[#e3ded4] rounded-lg p-2.5 bg-[#fbf9f4]/60">
+                    <label className="text-[11px] font-bold text-[#6b7775] uppercase tracking-wider block">Pickup Location</label>
+                    <input type="text" value={cabPickup} onChange={(e) => setCabPickup(e.target.value)} className="w-full bg-transparent font-semibold text-[#0d3d3a] text-sm focus:outline-none pt-0.5" />
+                  </div>
+                  <div className="border border-[#e3ded4] rounded-lg p-2.5 bg-[#fbf9f4]/60">
+                    <label className="text-[11px] font-bold text-[#6b7775] uppercase tracking-wider block">Drop Location</label>
+                    <input type="text" value={cabDrop} onChange={(e) => setCabDrop(e.target.value)} className="w-full bg-transparent font-semibold text-[#0d3d3a] text-sm focus:outline-none pt-0.5" />
+                  </div>
+                  <div className="border border-[#e3ded4] rounded-lg p-2.5 bg-[#fbf9f4]/60">
+                    <label className="text-[11px] font-bold text-[#6b7775] uppercase tracking-wider block">Date & Time</label>
+                    <input type="text" value={cabDate} onChange={(e) => setCabDate(e.target.value)} className="w-full bg-transparent font-semibold text-[#0d3d3a] text-sm focus:outline-none pt-0.5" />
+                  </div>
+                  <div>
+                    <button type="submit" className="w-full h-[52px] bg-[#0d6b63] text-white font-semibold rounded-lg hover:bg-[#0a534d] transition-colors flex items-center justify-center gap-2 text-sm shadow-sm">
+                      <span className="material-symbols-outlined text-[18px]">search</span>
+                      Search cabs
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Holidays Form */}
+              {activeService === 'holidays' && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4 items-end">
+                  <div className="border border-[#e3ded4] rounded-lg p-2.5 bg-[#fbf9f4]/60">
+                    <label className="text-[11px] font-bold text-[#6b7775] uppercase tracking-wider block">Departing From</label>
+                    <input type="text" value={holidayFrom} onChange={(e) => setHolidayFrom(e.target.value)} className="w-full bg-transparent font-semibold text-[#0d3d3a] text-sm focus:outline-none pt-0.5" />
+                  </div>
+                  <div className="border border-[#e3ded4] rounded-lg p-2.5 bg-[#fbf9f4]/60">
+                    <label className="text-[11px] font-bold text-[#6b7775] uppercase tracking-wider block">Going To</label>
+                    <input type="text" value={holidayDest} onChange={(e) => setHolidayDest(e.target.value)} className="w-full bg-transparent font-semibold text-[#0d3d3a] text-sm focus:outline-none pt-0.5" />
+                  </div>
+                  <div className="border border-[#e3ded4] rounded-lg p-2.5 bg-[#fbf9f4]/60">
+                    <label className="text-[11px] font-bold text-[#6b7775] uppercase tracking-wider block">Duration</label>
+                    <select className="w-full bg-transparent font-semibold text-[#0d3d3a] text-sm focus:outline-none pt-0.5">
+                      <option>5 – 6 nights</option>
+                      <option>3 – 4 nights</option>
+                      <option>7+ nights</option>
+                    </select>
+                  </div>
+                  <div>
+                    <button type="submit" className="w-full h-[52px] bg-[#0d6b63] text-white font-semibold rounded-lg hover:bg-[#0a534d] transition-colors flex items-center justify-center gap-2 text-sm shadow-sm">
+                      <span className="material-symbols-outlined text-[18px]">search</span>
+                      Explore packages
+                    </button>
+                  </div>
+                </div>
+              )}
+            </form>
           </div>
         </section>
 
-        {/* 4. Position 3 (Third Position / Slide): FEATURES - Fully Preserved */}
-        <section id="features" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-20 w-full scroll-mt-20 text-left">
-          <div className="text-center max-w-3xl mx-auto mb-12 flex flex-col gap-2">
-            <span className="text-xs uppercase tracking-widest text-[#006D77] font-bold">
-              {t('features.badge', 'Autonomous Protocol')}
-            </span>
-            <h2 className="text-3xl sm:text-4xl font-extrabold text-[#17324D] tracking-tight font-['Plus_Jakarta_Sans'] leading-tight">
-              {t('features.title', 'The AI Refund Flow Architecture')}
+        {/* POPULAR DESTINATIONS (Page 1) */}
+        <section className="site-container pb-14">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-xl sm:text-2xl font-bold text-[#0d3d3a] tracking-tight">
+              Popular destinations
             </h2>
-            <p className="text-sm sm:text-base text-gray-600 font-normal leading-relaxed max-w-2xl mx-auto">
-              {t('features.subtitle', 'An end-to-end automated pipeline connecting passenger itineraries directly to statutory compensation payouts.')}
-            </p>
-          </div>
-
-          {/* 4 Step Pipeline Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {/* Step 1 */}
-            <div className="p-6 rounded-3xl bg-white shadow-sm hover:shadow-xl transition-all flex flex-col justify-between border border-[#C2EAE7] group">
-              <div className="flex flex-col">
-                <div className="flex items-center justify-between mb-4">
-                  <span className="w-10 h-10 rounded-2xl bg-[#EAF8F7] border border-[#C2EAE7] flex items-center justify-center text-sm font-black text-[#006D77] group-hover:bg-[#006D77] group-hover:text-white transition-colors">
-                    01
-                  </span>
-                </div>
-                <h3 className="text-lg font-bold text-[#17324D] tracking-tight font-['Plus_Jakarta_Sans']">
-                  {t('features.step1Title', 'Booking Sync')}
-                </h3>
-                <p className="text-xs sm:text-sm text-gray-600 font-normal mt-2 leading-relaxed">
-                  {t('features.step1Desc', 'Trip search query, e-ticket forward, or instant booking reference lookup.')}
-                </p>
-              </div>
-              <div className="mt-6 pt-4 border-t border-gray-100 flex items-center gap-2 text-[#006D77] text-xs font-bold">
-                <span className="material-symbols-outlined text-[18px]">sync_alt</span>
-                <span>{t('features.step1Tag', 'Zero-friction sync')}</span>
-              </div>
-            </div>
-
-            {/* Step 2 */}
-            <div className="p-6 rounded-3xl bg-white shadow-sm hover:shadow-xl transition-all flex flex-col justify-between border border-[#C2EAE7] group">
-              <div className="flex flex-col">
-                <div className="flex items-center justify-between mb-4">
-                  <span className="w-10 h-10 rounded-2xl bg-[#EAF8F7] border border-[#C2EAE7] text-[#006D77] flex items-center justify-center text-sm font-black group-hover:bg-[#006D77] group-hover:text-white transition-colors">
-                    02
-                  </span>
-                </div>
-                <h3 className="text-lg font-bold text-[#17324D] tracking-tight font-['Plus_Jakarta_Sans']">
-                  {t('features.step2Title', 'AI Investigation')}
-                </h3>
-                <p className="text-xs sm:text-sm text-gray-600 font-normal mt-2 leading-relaxed">
-                  {t('features.step2Desc', 'Deep scan of operator schedule logs, flight radar, and passenger rights regulations.')}
-                </p>
-              </div>
-              <div className="mt-6 pt-4 border-t border-gray-100 flex items-center gap-2 text-[#006D77] text-xs font-bold">
-                <span className="material-symbols-outlined text-[18px]">psychology</span>
-                <span>{t('features.step2Tag', 'Automated Policy Check')}</span>
-              </div>
-            </div>
-
-            {/* Step 3 */}
-            <div className="p-6 rounded-3xl bg-white shadow-sm hover:shadow-xl transition-all flex flex-col justify-between border border-[#C2EAE7] group">
-              <div className="flex flex-col">
-                <div className="flex items-center justify-between mb-4">
-                  <span className="w-10 h-10 rounded-2xl bg-[#EAF8F7] border border-[#C2EAE7] text-[#006D77] flex items-center justify-center text-sm font-black group-hover:bg-[#006D77] group-hover:text-white transition-colors">
-                    03
-                  </span>
-                </div>
-                <h3 className="text-lg font-bold text-[#17324D] tracking-tight font-['Plus_Jakarta_Sans']">
-                  {t('features.step3Title', 'Dossier Generation')}
-                </h3>
-                <p className="text-xs sm:text-sm text-gray-600 font-normal mt-2 leading-relaxed">
-                  {t('features.step3Desc', 'Assembly of tickets, delay metrics, and undisputed claim documents.')}
-                </p>
-              </div>
-              <div className="mt-6 pt-4 border-t border-gray-100 flex items-center gap-2 text-[#006D77] text-xs font-bold">
-                <span className="material-symbols-outlined text-[18px]">folder_special</span>
-                <span>{t('features.step3Tag', 'Verified Dossier')}</span>
-              </div>
-            </div>
-
-            {/* Step 4 */}
-            <div className="p-6 rounded-3xl bg-white shadow-sm hover:shadow-xl transition-all flex flex-col justify-between border border-[#C2EAE7] group">
-              <div className="flex flex-col">
-                <div className="flex items-center justify-between mb-4">
-                  <span className="w-10 h-10 rounded-2xl bg-[#EAF8F7] border border-[#C2EAE7] text-[#006D77] flex items-center justify-center text-sm font-black group-hover:bg-[#006D77] group-hover:text-white transition-colors">
-                    04
-                  </span>
-                </div>
-                <h3 className="text-lg font-bold text-[#17324D] tracking-tight font-['Plus_Jakarta_Sans']">
-                  {t('features.step4Title', 'Refund Decision')}
-                </h3>
-                <p className="text-xs sm:text-sm text-gray-600 font-normal mt-2 leading-relaxed">
-                  {t('features.step4Desc', 'Precise settlement calculation and direct transmission to operator portals.')}
-                </p>
-              </div>
-              <div className="mt-6 pt-4 border-t border-gray-100 flex items-center gap-2 text-emerald-700 text-xs font-bold">
-                <span className="material-symbols-outlined text-[18px]">payments</span>
-                <span>{t('features.step4Tag', 'Fast Restitution')}</span>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* 5. Position 4 (Fourth Position / Slide): REFUND ENGINE - Ocean Theme & i18n */}
-        <section id="refund-engine" className="w-full bg-[#0a1e2e] text-white py-16 sm:py-20 scroll-mt-20 border-y border-[#006D77]/40 relative overflow-hidden text-left">
-          {/* Ambient Lighting Background */}
-          <div className="absolute top-0 right-1/4 w-96 h-96 bg-[#006D77]/20 rounded-full blur-3xl pointer-events-none" />
-          <div className="absolute bottom-0 left-1/4 w-96 h-96 bg-[#20B8B0]/15 rounded-full blur-3xl pointer-events-none" />
-
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col gap-8 relative z-10">
-            {/* Section Header */}
-            <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
-              <div className="flex flex-col gap-1.5 max-w-2xl text-left">
-                <span className="text-xs uppercase tracking-widest text-[#E8B86D] font-bold">
-                  {t('refund.badge', 'Real-time Audit Engine')}
-                </span>
-                <h2 className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight font-['Plus_Jakarta_Sans'] leading-tight">
-                  {t('refund.title', 'AI Refund Investigation System')}
-                </h2>
-                <p className="text-sm sm:text-base text-white/80 font-normal leading-relaxed">
-                  {t('refund.subtitle', 'Automated verification and policy checking parsing active disruption claims.')}
-                </p>
-              </div>
-
-              <button
-                onClick={() => navigate('/dashboard')}
-                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-white/10 hover:bg-white/20 border border-white/20 text-xs font-bold tracking-wide transition-all self-start md:self-auto cursor-pointer"
-              >
-                <span className="material-symbols-outlined text-[16px] text-[#E8B86D]">dashboard</span>
-                <span>{t('nav.refundConsole', 'Open Refund Console')}</span>
-              </button>
-            </div>
-
-            {/* Main High-Contrast Obsidian Glass Panel */}
-            <div className="w-full rounded-3xl bg-black/40 backdrop-blur-2xl p-6 sm:p-10 shadow-2xl relative overflow-hidden border border-[#20B8B0]/30">
-              <div className="relative grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch">
-                {/* Left Console Panel */}
-                <div className="lg:col-span-7 flex flex-col justify-between gap-6 text-left">
-                  {/* Flight Pill Header */}
-                  <div className="flex flex-wrap items-center justify-between gap-4 p-4 rounded-2xl bg-white/5 backdrop-blur-md border border-white/10">
-                    <div className="flex items-center gap-3">
-                      <div className="w-12 h-12 rounded-xl bg-[#006D77]/40 text-[#E8B86D] border border-[#20B8B0]/30 flex items-center justify-center font-black text-lg">
-                        AI
-                      </div>
-                      <div className="flex flex-col">
-                        <div className="flex items-center gap-2">
-                          <span className="text-lg font-extrabold tracking-tight text-white font-['Plus_Jakarta_Sans']">
-                            {t('refund.flight', 'Flight AI-805')}
-                          </span>
-                          <span className="px-2.5 py-0.5 rounded-full bg-red-950/80 text-red-300 border border-red-500/40 text-[11px] font-bold tracking-wider">
-                            {t('refund.cancelled', 'CANCELLED')}
-                          </span>
-                        </div>
-                        <span className="text-xs text-white/80 font-medium">
-                          {t('refund.route', 'Delhi (DEL) → Mumbai (BOM)')}
-                        </span>
-                      </div>
-                    </div>
-                    <div className="flex flex-col text-right">
-                      <span className="text-[11px] text-white/60 uppercase tracking-wider font-bold">Disruption Notice</span>
-                      <span className="text-xs text-white font-semibold">{t('refund.notice', 'Under 24h Threshold')}</span>
-                    </div>
-                  </div>
-
-                  {/* Disruption & Regulation Cards */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div className="p-4 rounded-2xl bg-white/[0.04] backdrop-blur-sm flex flex-col gap-2 border border-white/10">
-                      <div className="flex items-center justify-between">
-                        <span className="text-[11px] text-[#E8B86D] uppercase tracking-wider font-bold">
-                          Disruption Audit
-                        </span>
-                        <span className="material-symbols-outlined text-[#E8B86D] text-[18px]">verified</span>
-                      </div>
-                      <span className="text-base sm:text-lg font-bold text-white tracking-tight">{t('refund.auditTitle', 'Clear Conditions')}</span>
-                      <p className="text-xs sm:text-sm text-white/80 font-normal leading-relaxed">
-                        {t('refund.auditDesc', 'Weather defense verified clear; carrier operational liability established.')}
-                      </p>
-                    </div>
-
-                    <div className="p-4 rounded-2xl bg-white/[0.04] backdrop-blur-sm flex flex-col gap-2 border border-white/10">
-                      <div className="flex items-center justify-between">
-                        <span className="text-[11px] text-[#E8B86D] uppercase tracking-wider font-bold">
-                          Regulation Rule
-                        </span>
-                        <span className="material-symbols-outlined text-[#E8B86D] text-[18px]">gavel</span>
-                      </div>
-                      <span className="text-base sm:text-lg font-bold text-white tracking-tight">{t('refund.ruleTitle', 'DGCA CAR Sec 3')}</span>
-                      <p className="text-xs sm:text-sm text-white/80 font-normal leading-relaxed">
-                        {t('refund.ruleDesc', 'Mandates 100% full ticket refund without cancellation penalty.')}
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Verified Status Bar */}
-                  <div className="p-4 rounded-2xl bg-white/[0.04] flex items-center justify-between border border-white/10">
-                    <div className="flex items-center gap-2 text-white font-semibold text-xs sm:text-sm">
-                      <span className="material-symbols-outlined text-[18px] text-[#20B8B0]">check_circle</span>
-                      <span>{t('refund.verifiedBar', 'Passenger ticket and payment receipts verified')}</span>
-                    </div>
-                    <span className="text-xs text-[#20B8B0] font-mono font-bold uppercase tracking-wider">{t('refund.dossierReady', 'Dossier Ready')}</span>
-                  </div>
-                </div>
-
-                {/* Right Verdict Panel */}
-                <div className="lg:col-span-5 flex flex-col justify-between p-6 sm:p-7 rounded-2xl bg-gradient-to-br from-white/[0.08] to-white/[0.02] backdrop-blur-xl gap-6 border border-white/10 text-left">
-                  <div className="flex flex-col gap-3">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs uppercase tracking-widest text-[#E8B86D] font-bold">
-                        {t('refund.verdictTitle', 'Investigation Verdict')}
-                      </span>
-                      <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 text-xs font-bold border border-emerald-500/30">
-                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-                        <span>{t('refund.confidence', '99.4% Confidence')}</span>
-                      </div>
-                    </div>
-
-                    <div className="flex flex-col mt-2">
-                      <span className="text-xs text-white/70 font-semibold uppercase tracking-wider">{t('refund.payableLabel', 'Verified Restitution Payable:')}</span>
-                      <div className="text-3xl sm:text-4xl lg:text-5xl font-black text-white tracking-tight flex items-baseline gap-2 mt-1 font-['Plus_Jakarta_Sans']">
-                        <span>{t('refund.amount', '₹9,450')}</span>
-                        <span className="text-base sm:text-lg text-white/60 font-semibold">($120 USD)</span>
-                      </div>
-                      <span className="text-xs text-[#E8B86D] font-semibold mt-1">
-                        {t('refund.taxRelief', 'Includes full unused ticket refund & statutory tax relief')}
-                      </span>
-                    </div>
-
-                    <div className="flex flex-col gap-2.5 mt-4 pt-2 border-t border-white/10">
-                      <div className="flex items-center gap-2.5 text-white font-medium text-xs sm:text-sm">
-                        <span className="w-5 h-5 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0">
-                          <span className="material-symbols-outlined text-[14px]">check</span>
-                        </span>
-                        <span>{t('refund.check1', 'Flight cancellation confirmed')}</span>
-                      </div>
-                      <div className="flex items-center gap-2.5 text-white font-medium text-xs sm:text-sm">
-                        <span className="w-5 h-5 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0">
-                          <span className="material-symbols-outlined text-[14px]">check</span>
-                        </span>
-                        <span>{t('refund.check2', 'Eligible for full fare refund')}</span>
-                      </div>
-                      <div className="flex items-center gap-2.5 text-white font-medium text-xs sm:text-sm">
-                        <span className="w-5 h-5 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0">
-                          <span className="material-symbols-outlined text-[14px]">check</span>
-                        </span>
-                        <span>{t('refund.check3', 'Ready for direct bank transfer')}</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <button
-                    onClick={() => navigate('/refund-investigations/AT-9842')}
-                    className="w-full inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-full bg-gradient-to-r from-[#E8B86D] to-[#d9a552] hover:from-[#d9a552] hover:to-[#c79443] text-[#0d283e] text-sm sm:text-base font-extrabold hover:shadow-lg transition-all cursor-pointer mt-4"
-                  >
-                    <span className="material-symbols-outlined text-[18px]">verified</span>
-                    <span>{t('refund.inspectBtn', 'Inspect Refund Details')} &rarr;</span>
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* 6. Promotional Banners and Special Offers Section */}
-        <PromotionalOffers onBookCategory={handleCategorySelect} />
-
-        {/* 7. Popular Destinations Section */}
-        <PopularDestinations onSelectCity={handleDestinationSelect} />
-
-        {/* 8. High-Impact Call To Action Banner */}
-        <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-12 pb-16 sm:pt-16 sm:pb-20 w-full">
-          <div className="w-full rounded-3xl bg-gradient-to-r from-[#0d283e] via-[#006D77] to-[#0a1e2e] text-white p-8 sm:p-14 relative overflow-hidden flex flex-col items-center text-center shadow-2xl border border-[#20B8B0]/30">
-            {/* Ambient Lighting */}
-            <div className="absolute -top-32 left-1/2 -translate-x-1/2 w-[600px] h-[300px] bg-[#20B8B0]/20 blur-3xl pointer-events-none rounded-full" />
-
-            <div className="relative z-10 flex flex-col items-center max-w-3xl gap-4">
-              <span className="px-4 py-1.5 rounded-full bg-black/30 backdrop-blur-sm text-[#E8B86D] font-extrabold text-xs uppercase tracking-wider border border-white/10">
-                {t('cta.badge', 'Instant Zero-Risk Investigation')}
+            <Link
+              to="/destinations"
+              className="text-sm font-semibold text-[#0d6b63] hover:text-[#0a534d] flex items-center gap-1 group"
+            >
+              See all
+              <span className="material-symbols-outlined text-[16px] group-hover:translate-x-0.5 transition-transform">
+                arrow_forward
               </span>
-              <h2 className="text-3xl sm:text-4xl lg:text-5xl text-white tracking-tight font-black font-['Plus_Jakarta_Sans'] leading-tight">
-                {t('cta.title', 'Have a disrupted travel booking?')}{' '}
-                <span className="text-[#E8B86D] block sm:inline">
-                  {t('cta.titleHighlight', 'Let our AI claim your statutory refund.')}
-                </span>
-              </h2>
-              <p className="text-sm sm:text-base text-white/85 max-w-xl leading-relaxed">
-                {t('cta.subtitle', 'No tedious forms. Zero paperwork. Get an instant, mathematically verified refund verdict in under 60 seconds.')}
-              </p>
+            </Link>
+          </div>
 
-              {/* Action Buttons */}
-              <div className="flex flex-col sm:flex-row items-center gap-4 mt-4 w-full sm:w-auto">
-                <button
-                  onClick={() => navigate('/refund-investigations/AT-9842')}
-                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-4 rounded-full bg-gradient-to-r from-[#E8B86D] to-[#d9a552] hover:from-[#d9a552] hover:to-[#c79443] text-[#0d283e] font-extrabold text-sm sm:text-base shadow-xl active:scale-95 transition-all cursor-pointer"
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            {/* Goa */}
+            <Link
+              to="/destinations"
+              className="group bg-white rounded-xl border border-[#e3ded4] overflow-hidden shadow-sm hover:shadow-md transition-all hover:-translate-y-0.5"
+            >
+              <div className="h-52 overflow-hidden relative">
+                <img
+                  src="https://images.unsplash.com/photo-1512343879784-a960bf40e7f2?auto=format&fit=crop&w=600&q=80"
+                  alt="Goa beach"
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                />
+                <div className="absolute top-3 right-3 bg-white/95 px-2.5 py-1 rounded-md text-xs font-bold text-[#0d3d3a] shadow-sm">
+                  From ₹ 3,299
+                </div>
+              </div>
+              <div className="p-4">
+                <h3 className="font-bold text-[#0d3d3a] text-base group-hover:text-[#0d6b63] transition-colors">
+                  Goa
+                </h3>
+                <p className="text-xs text-[#6b7775] mt-0.5">Beaches · Nightlife</p>
+              </div>
+            </Link>
+
+            {/* Kashmir */}
+            <Link
+              to="/destinations"
+              className="group bg-white rounded-xl border border-[#e3ded4] overflow-hidden shadow-sm hover:shadow-md transition-all hover:-translate-y-0.5"
+            >
+              <div className="h-52 overflow-hidden relative">
+                <img
+                  src="https://images.unsplash.com/photo-1595815771614-ade9d652a65d?auto=format&fit=crop&w=600&q=80"
+                  alt="Kashmir lake"
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                />
+                <div className="absolute top-3 right-3 bg-white/95 px-2.5 py-1 rounded-md text-xs font-bold text-[#0d3d3a] shadow-sm">
+                  From ₹ 4,899
+                </div>
+              </div>
+              <div className="p-4">
+                <h3 className="font-bold text-[#0d3d3a] text-base group-hover:text-[#0d6b63] transition-colors">
+                  Kashmir
+                </h3>
+                <p className="text-xs text-[#6b7775] mt-0.5">Lakes · Scenic views</p>
+              </div>
+            </Link>
+
+            {/* Manali */}
+            <Link
+              to="/destinations"
+              className="group bg-white rounded-xl border border-[#e3ded4] overflow-hidden shadow-sm hover:shadow-md transition-all hover:-translate-y-0.5"
+            >
+              <div className="h-52 overflow-hidden relative">
+                <img
+                  src="https://images.unsplash.com/photo-1626621341517-bbf3d9990a23?auto=format&fit=crop&w=600&q=80"
+                  alt="Manali mountains"
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                />
+                <div className="absolute top-3 right-3 bg-white/95 px-2.5 py-1 rounded-md text-xs font-bold text-[#0d3d3a] shadow-sm">
+                  From ₹ 3,699
+                </div>
+              </div>
+              <div className="p-4">
+                <h3 className="font-bold text-[#0d3d3a] text-base group-hover:text-[#0d6b63] transition-colors">
+                  Manali
+                </h3>
+                <p className="text-xs text-[#6b7775] mt-0.5">Mountains · Adventure</p>
+              </div>
+            </Link>
+
+            {/* Jaipur */}
+            <Link
+              to="/destinations"
+              className="group bg-white rounded-xl border border-[#e3ded4] overflow-hidden shadow-sm hover:shadow-md transition-all hover:-translate-y-0.5"
+            >
+              <div className="h-52 overflow-hidden relative">
+                <img
+                  src="https://images.unsplash.com/photo-1599661046289-e31897846e41?auto=format&fit=crop&w=600&q=80"
+                  alt="Jaipur heritage"
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                />
+                <div className="absolute top-3 right-3 bg-white/95 px-2.5 py-1 rounded-md text-xs font-bold text-[#0d3d3a] shadow-sm">
+                  From ₹ 6,999
+                </div>
+              </div>
+              <div className="p-4">
+                <h3 className="font-bold text-[#0d3d3a] text-base group-hover:text-[#0d6b63] transition-colors">
+                  Jaipur
+                </h3>
+                <p className="text-xs text-[#6b7775] mt-0.5">Heritage · Culture</p>
+              </div>
+            </Link>
+          </div>
+        </section>
+
+        {/* TRAVEL DEALS & OFFERS PREVIEW (Page 2) */}
+        <section className="site-container pb-14">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-xl sm:text-2xl font-bold text-[#0d3d3a] tracking-tight">
+              Travel deals & offers
+            </h2>
+            <Link
+              to="/offers"
+              className="text-sm font-semibold text-[#0d6b63] hover:text-[#0a534d] flex items-center gap-1 group"
+            >
+              All offers
+              <span className="material-symbols-outlined text-[16px] group-hover:translate-x-0.5 transition-transform">
+                arrow_forward
+              </span>
+            </Link>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {/* Flights Offer */}
+            <div className="bg-white rounded-xl border border-[#e3ded4] p-5 shadow-sm space-y-3">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-[#0d6b63] block">
+                Flights
+              </span>
+              <h3 className="text-base font-bold text-[#0d3d3a]">
+                Up to 20% off domestic flights
+              </h3>
+              <p className="text-xs text-[#6b7775]">Valid till 31 Oct 2026</p>
+              <div className="pt-2 flex items-center justify-between">
+                <span className="font-mono text-xs font-semibold px-2.5 py-1 rounded bg-[#f3eee5] text-[#0d3d3a] border border-[#e3ded4]">
+                  FLYINTRA
+                </span>
+                <Link
+                  to="/offers"
+                  className="text-xs font-semibold text-[#0d6b63] hover:underline"
                 >
-                  <span className="material-symbols-outlined text-[20px]">bolt</span>
-                  <span>{t('cta.startBtn', 'Start Free AI Refund Check')}</span>
-                </button>
-                <button
-                  onClick={() => navigate('/dashboard')}
-                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-4 rounded-full bg-white/10 hover:bg-white/20 text-white font-bold text-sm sm:text-base transition-all border border-white/20 cursor-pointer"
+                  View details →
+                </Link>
+              </div>
+            </div>
+
+            {/* Hotels Offer */}
+            <div className="bg-white rounded-xl border border-[#e3ded4] p-5 shadow-sm space-y-3">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-[#0d6b63] block">
+                Hotels
+              </span>
+              <h3 className="text-base font-bold text-[#0d3d3a]">
+                Flat 30% off hotel bookings
+              </h3>
+              <p className="text-xs text-[#6b7775]">Valid till 15 Nov 2026</p>
+              <div className="pt-2 flex items-center justify-between">
+                <span className="font-mono text-xs font-semibold px-2.5 py-1 rounded bg-[#f3eee5] text-[#0d3d3a] border border-[#e3ded4]">
+                  STAYMORE
+                </span>
+                <Link
+                  to="/offers"
+                  className="text-xs font-semibold text-[#0d6b63] hover:underline"
                 >
-                  <span className="material-symbols-outlined text-[20px] text-[#20B8B0]">shield_with_heart</span>
-                  <span>{t('cta.exploreBtn', 'Explore Refund Console')}</span>
-                </button>
+                  View details →
+                </Link>
+              </div>
+            </div>
+
+            {/* Holidays Offer */}
+            <div className="bg-white rounded-xl border border-[#e3ded4] p-5 shadow-sm space-y-3">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-[#0d6b63] block">
+                Holidays
+              </span>
+              <h3 className="text-base font-bold text-[#0d3d3a]">
+                ₹5,000 off holiday packages
+              </h3>
+              <p className="text-xs text-[#6b7775]">Valid till 30 Nov 2026</p>
+              <div className="pt-2 flex items-center justify-between">
+                <span className="font-mono text-xs font-semibold px-2.5 py-1 rounded bg-[#f3eee5] text-[#0d3d3a] border border-[#e3ded4]">
+                  HOLIDAY5K
+                </span>
+                <Link
+                  to="/offers"
+                  className="text-xs font-semibold text-[#0d6b63] hover:underline"
+                >
+                  View details →
+                </Link>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* AI-POWERED REFUND ASSISTANCE SECTION (Page 1 & 5) */}
+        <section className="site-container pb-16">
+          <div className="bg-[#f0ebe1] rounded-2xl border border-[#e3ded4] p-6 sm:p-10">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10 items-center">
+              {/* Left Column */}
+              <div className="lg:col-span-6 space-y-4">
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#e9f0ea] border border-[#d0dfd3] text-[#2d5650] text-xs font-bold tracking-wide uppercase">
+                  AI-Powered Refund Assistance
+                </div>
+
+                <h2 className="text-2xl sm:text-3xl font-bold text-[#0d3d3a] tracking-tight leading-snug">
+                  If your plans change, we help you understand your options.
+                </h2>
+
+                <p className="text-sm sm:text-base text-[#5c6967] leading-relaxed">
+                  You pay for your bookings as usual. If a booking is cancelled or disrupted,
+                  our AI helps you check eligibility, understand the applicable policies and
+                  track your claim.
+                </p>
+
+                <div className="pt-2">
+                  <Link
+                    to="/refunds"
+                    className="inline-flex items-center gap-2 bg-[#0d6b63] text-white px-5 py-2.5 rounded-md text-sm font-semibold hover:bg-[#0a534d] transition-colors shadow-sm"
+                  >
+                    Check Refund Eligibility
+                    <span className="material-symbols-outlined text-[16px]">arrow_forward</span>
+                  </Link>
+                </div>
+
+                <p className="text-xs text-[#889593] leading-relaxed">
+                  Refund eligibility and amounts depend on your booking, applicable policies and provider decisions.
+                </p>
               </div>
 
-              {/* Metric micro-strip */}
-              <div className="flex flex-wrap items-center justify-center gap-6 mt-6 text-white/80 text-xs font-semibold">
-                <span className="flex items-center gap-1.5">
-                  <span className="material-symbols-outlined text-[#20B8B0] text-[16px]">check_circle</span>
-                  {t('cta.metric1', '99.2% Claim Resolution Rate')}
-                </span>
-                <span className="flex items-center gap-1.5">
-                  <span className="material-symbols-outlined text-[#20B8B0] text-[16px]">check_circle</span>
-                  {t('cta.metric2', 'Direct Regulatory Enforcement')}
-                </span>
-                <span className="flex items-center gap-1.5">
-                  <span className="material-symbols-outlined text-[#20B8B0] text-[16px]">check_circle</span>
-                  {t('cta.metric3', 'No Recovery, No Fee')}
-                </span>
+              {/* Right Column: Interactive Sample Preview Card (From Page 1 & 10 Mockup) */}
+              <div className="lg:col-span-6">
+                <div className="bg-white rounded-xl border border-[#e3ded4] p-5 shadow-sm space-y-4">
+                  <div className="flex items-center justify-between pb-3 border-b border-[#e3ded4]">
+                    <div>
+                      <span className="font-mono text-xs font-bold text-[#0d3d3a] block">
+                        Case #RF12345
+                      </span>
+                      <span className="text-xs text-[#6b7775]">Delhi → Mumbai · 24 Oct 2026</span>
+                    </div>
+                    <span className="px-2.5 py-0.5 rounded-full bg-[#fef3c7] text-[#92400e] text-xs font-semibold border border-[#fde68a]">
+                      Under review
+                    </span>
+                  </div>
+
+                  {/* Stepper Progress */}
+                  <div className="grid grid-cols-4 gap-2 text-center text-[11px] py-1">
+                    <div className="flex flex-col items-center gap-1">
+                      <div className="w-6 h-6 rounded-full bg-[#0d6b63] text-white flex items-center justify-center font-bold text-[10px]">
+                        ✓
+                      </div>
+                      <span className="font-semibold text-[#0d3d3a]">Submitted</span>
+                      <span className="text-[#889593] text-[10px]">18 Oct</span>
+                    </div>
+
+                    <div className="flex flex-col items-center gap-1">
+                      <div className="w-6 h-6 rounded-full bg-[#0d6b63] text-white flex items-center justify-center font-bold text-[10px] ring-2 ring-[#0d6b63]/20">
+                        2
+                      </div>
+                      <span className="font-semibold text-[#0d6b63]">AI review</span>
+                      <span className="text-[#889593] text-[10px]">20 Oct</span>
+                    </div>
+
+                    <div className="flex flex-col items-center gap-1">
+                      <div className="w-6 h-6 rounded-full bg-[#f3eee5] text-[#889593] flex items-center justify-center font-bold text-[10px]">
+                        3
+                      </div>
+                      <span className="text-[#889593]">Decision</span>
+                      <span className="text-[#889593] text-[10px]">Pending</span>
+                    </div>
+
+                    <div className="flex flex-col items-center gap-1">
+                      <div className="w-6 h-6 rounded-full bg-[#f3eee5] text-[#889593] flex items-center justify-center font-bold text-[10px]">
+                        4
+                      </div>
+                      <span className="text-[#889593]">Completed</span>
+                      <span className="text-[#889593] text-[10px]">—</span>
+                    </div>
+                  </div>
+
+                  {/* Checklist Items */}
+                  <div className="space-y-2 pt-2 bg-[#fbf9f4] rounded-lg p-3 border border-[#e3ded4] text-xs">
+                    <div className="flex items-center gap-2 text-[#0d3d3a]">
+                      <span className="text-[#166534] font-bold">✓</span>
+                      <span>Booking details verified</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-[#0d3d3a]">
+                      <span className="text-[#166534] font-bold">✓</span>
+                      <span>Cancellation notice found</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-[#6b7775]">
+                      <span className="text-[#0d6b63] animate-pulse font-bold">…</span>
+                      <span>Policy check in progress</span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between text-[11px] text-[#889593] pt-1">
+                    <span>Sample preview. The provider makes the final decision.</span>
+                    <Link to="/refunds/RF12345" className="font-semibold text-[#0d6b63] hover:underline">
+                      View full case →
+                    </Link>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
         </section>
       </main>
 
-      {/* Floating AI Assistant Chatbot */}
-      <AiChatbotDrawer />
+      <SiteFooter />
     </div>
   );
 };
-export default LandingPage;
