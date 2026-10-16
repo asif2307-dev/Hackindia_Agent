@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Minimal Travel</title>
+    <link rel="stylesheet" href="styles.css">
+    <!-- Razorpay SDK -->
+    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+</head>
+<body>
+    <!-- Navbar -->
+    <header class="navbar">
+        <div class="logo">WanderLust</div>
+        <nav>
+            <ul class="nav-links">
+                <li><a href="#">Home</a></li>
+                <li><a href="#destinations">Destinations</a></li>
+                <li><a href="#about">About</a></li>
+                <li><a href="#contact">Contact</a></li>
+            </ul>
+        </nav>
+        <button class="btn-primary btn-book" data-destination="Custom Travel Package" data-price="1">Book Now</button>
+    </header>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="hero-content">
+            <h1>Discover Your Next Adventure</h1>
+            <p>Explore the most beautiful places in India with us.</p>
+            <div class="search-bar">
+                <input type="text" placeholder="Where do you want to go?">
+                <button class="btn-primary">Search</button>
+            </div>
+        </div>
+    </section>
+
+    <!-- Featured Destinations -->
+    <section id="destinations" class="destinations">
+        <h2>Popular Destinations</h2>
+        <div class="grid-container">
+            <!-- Card 1 -->
+            <div class="card">
+                <img src="https://images.unsplash.com/photo-1472289065668-ce650ac443d2?auto=format&fit=crop&w=600&q=80" alt="Jaipur">
+                <div class="card-content">
+                    <h3>Jaipur, Rajasthan</h3>
+                    <p>Experience the Pink City and its majestic forts.</p>
+                    <div class="card-footer">
+                        <span class="price">From ₹1</span>
+                        <button class="btn-secondary btn-book" data-destination="Jaipur, Rajasthan" data-price="1">Book</button>
+                    </div>
+                </div>
+            </div>
+            <!-- Card 2 -->
+            <div class="card">
+                <img src="https://images.unsplash.com/photo-1602216056096-3b40cc0c9944?auto=format&fit=crop&w=600&q=80" alt="Kerala">
+                <div class="card-content">
+                    <h3>Kerala Backwaters</h3>
+                    <p>Relax in houseboats and explore lush greenery.</p>
+                    <div class="card-footer">
+                        <span class="price">From ₹1</span>
+                        <button class="btn-secondary btn-book" data-destination="Kerala Backwaters" data-price="1">Book</button>
+                    </div>
+                </div>
+            </div>
+            <!-- Card 3 -->
+            <div class="card">
+                <img src="https://images.unsplash.com/photo-1581793746485-04698e79a4e8?auto=format&fit=crop&w=600&q=80" alt="Ladakh">
+                <div class="card-content">
+                    <h3>Ladakh, Himalayas</h3>
+                    <p>Immerse yourself in breathtaking landscapes and monasteries.</p>
+                    <div class="card-footer">
+                        <span class="price">From ₹1</span>
+                        <button class="btn-secondary btn-book" data-destination="Ladakh, Himalayas" data-price="1">Book</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+        <p>&copy; 2026 WanderLust Travel. All rights reserved.</p>
+    </footer>
+
+    <!-- Booking Modal -->
+    <div id="bookingModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>Complete Your Booking</h2>
+            <div class="booking-summary">
+                <p><strong>Package:</strong> <span id="modalDestination"></span></p>
+                <p><strong>Amount:</strong> <span id="modalPrice"></span></p>
+            </div>
+            <form id="bookingForm">
+                <div class="form-group">
+                    <label for="name">Full Name</label>
+                    <input type="text" id="name" required placeholder="Enter your name">
+                </div>
+                <div class="form-group">
+                    <label for="email">Email</label>
+                    <input type="email" id="email" required placeholder="Enter your email">
+                </div>
+                <div class="form-group">
+                    <label for="phone">Phone Number</label>
+                    <input type="tel" id="phone" required placeholder="Enter your phone number">
+                </div>
+                <button type="submit" class="btn-primary" style="width: 100%; margin-top: 1rem;">Proceed to Pay</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="payment.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
