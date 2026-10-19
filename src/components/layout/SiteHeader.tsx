@@ -9,9 +9,9 @@ export const SiteHeader: React.FC<SiteHeaderProps> = ({ activeTab }) => {
   const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [serviceNavOpen, setServiceNavOpen] = useState(false);
-  const [currentUser, setCurrentUser] = useState<{ name: string; email: string } | null>(() => {
+  const [currentUser, setCurrentUser] = useState<{ name: string; email: string; role?: string } | null>(() => {
     try {
-      const raw = sessionStorage.getItem('agent_travel_user');
+      const raw = sessionStorage.getItem('agent_travel_user') || localStorage.getItem('agent_travel_user');
       return raw ? JSON.parse(raw) : null;
     } catch {
       return null;
@@ -20,7 +20,11 @@ export const SiteHeader: React.FC<SiteHeaderProps> = ({ activeTab }) => {
 
   const handleSignOut = () => {
     sessionStorage.removeItem('agent_travel_user');
+    sessionStorage.removeItem('agent_travel_token');
+    localStorage.removeItem('agent_travel_user');
+    localStorage.removeItem('agent_travel_token');
     setCurrentUser(null);
+    fetch('/api/auth/logout', { method: 'POST' }).catch(() => {});
   };
 
   const isActive = (path: string) => {
@@ -172,14 +176,16 @@ export const SiteHeader: React.FC<SiteHeaderProps> = ({ activeTab }) => {
 
         {/* Right Action Buttons */}
         <div className="flex items-center gap-2 sm:gap-3">
-          <Link
-            to="/reviewer"
-            className="hidden xl:inline-flex items-center gap-1 px-2.5 py-1 rounded border border-[#0d6b63]/30 bg-[#e8f2f0] text-[#0d6b63] text-[11px] font-semibold hover:bg-[#0d6b63] hover:text-white transition-colors"
-            title="Open internal staff reviewer console"
-          >
-            <span className="material-symbols-outlined text-[13px]">shield_person</span>
-            Reviewer console
-          </Link>
+          {currentUser?.role === 'reviewer' && (
+            <Link
+              to="/reviewer"
+              className="hidden xl:inline-flex items-center gap-1 px-2.5 py-1 rounded border border-[#0d6b63]/30 bg-[#e8f2f0] text-[#0d6b63] text-[11px] font-semibold hover:bg-[#0d6b63] hover:text-white transition-colors"
+              title="Open internal staff reviewer console"
+            >
+              <span className="material-symbols-outlined text-[13px]">shield_person</span>
+              Reviewer console
+            </Link>
+          )}
 
           {currentUser ? (
             <div className="flex items-center gap-2">
@@ -331,13 +337,15 @@ export const SiteHeader: React.FC<SiteHeaderProps> = ({ activeTab }) => {
           >
             Profile & settings
           </Link>
-          <Link
-            to="/reviewer"
-            onClick={() => setMobileMenuOpen(false)}
-            className="block px-3 py-2 rounded-md text-sm font-semibold text-[#0d6b63] bg-[#e8f2f0] mt-2"
-          >
-            Reviewer Console (Staff)
-          </Link>
+          {currentUser?.role === 'reviewer' && (
+            <Link
+              to="/reviewer"
+              onClick={() => setMobileMenuOpen(false)}
+              className="block px-3 py-2 rounded-md text-sm font-semibold text-[#0d6b63] bg-[#e8f2f0] mt-2"
+            >
+              Reviewer Console (Staff)
+            </Link>
+          )}
 
           {currentUser ? (
             <div className="pt-2 border-t border-[#e3ded4] flex items-center justify-between px-3 py-2 text-xs">
