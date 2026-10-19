@@ -32,6 +32,11 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 
+# Test data artifacts
+server/data/*.test.json
+server/data/*.test.*.json
+server/data/*.test*.tmp
+
 # Editor & OS files
 .DS_Store
 Thumbs.db

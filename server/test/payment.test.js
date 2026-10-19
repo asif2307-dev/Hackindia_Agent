@@ -5,10 +5,16 @@
  * Uses direct in-process mock invocation to run securely inside sandbox environments.
  */
 
-import { describe, it, beforeEach } from 'node:test';
+import { describe, it, beforeEach, after } from 'node:test';
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
 import { db } from '../awsConfig.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // Helpers to simulate Express requests/responses in-memory
 const createMockRes = () => {
@@ -32,8 +38,36 @@ const createMockRes = () => {
   return res;
 };
 
+// Atomically reserve a run-unique test store using exclusive creation flag 'wx' (O_CREAT | O_EXCL)
+const runId = crypto.randomUUID();
+const testStoreFilename = `store.test.${runId}.json`;
+const testStorePath = path.resolve(__dirname, '../data', testStoreFilename);
+
+let reservedByThisProcess = false;
+let testStoreFile = null;
+try {
+  fs.writeFileSync(testStorePath, '{}', { flag: 'wx' });
+  reservedByThisProcess = true;
+  testStoreFile = db._useTestStore(testStoreFilename);
+} catch (err) {
+  // ONLY unlink if THIS process successfully completed atomic 'wx' reservation
+  if (reservedByThisProcess) {
+    try { fs.unlinkSync(testStorePath); } catch {}
+  }
+  throw err;
+}
+
 beforeEach(() => {
   db._reset();
+});
+
+after(() => {
+  // Ownership-safe cleanup: deletes only the file atomically reserved by this test run
+  try {
+    if (reservedByThisProcess && testStoreFile && path.resolve(testStoreFile) === testStorePath && fs.existsSync(testStorePath)) {
+      fs.unlinkSync(testStorePath);
+    }
+  } catch {}
 });
 
 describe('Razorpay Test Mode Backend Integration Tests', () => {
