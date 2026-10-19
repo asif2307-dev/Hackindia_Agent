@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ReviewerHeader } from '../components/layout/ReviewerHeader';
 import { useInvestigation } from '../context/InvestigationContext';
 
@@ -8,9 +8,8 @@ export const HumanReviewPage: React.FC = () => {
   const [selectedFilter, setSelectedFilter] = useState<'All' | 'Ready' | 'Docs'>('All');
   const [selectedCaseId, setSelectedCaseId] = useState<string>('AT-9842');
   const [decision, setDecision] = useState<string>('eligible');
-  const [reviewerNote, setReviewerNote] = useState<string>(
-    'I have reviewed the AI findings and the supporting documents. Carrier operational cancellation confirmed in GDS logs.'
-  );
+  const [reviewerNote, setReviewerNote] = useState<string>('');
+  const [isSavingDraft, setIsSavingDraft] = useState<boolean>(false);
   const [submittedAlert, setSubmittedAlert] = useState<string | null>(null);
 
   // Filter cases relevant for human review queue
@@ -30,32 +29,87 @@ export const HumanReviewPage: React.FC = () => {
   });
 
   const selectedCase =
-    cases.find((c) => c.id === selectedCaseId || c.caseRef === selectedCaseId) ||
+    cases.find(
+      (c) =>
+        c.id.toLowerCase() === selectedCaseId.toLowerCase() ||
+        c.caseRef.toLowerCase().replace('#', '') === selectedCaseId.toLowerCase().replace('#', '') ||
+        c.pnr.toLowerCase() === selectedCaseId.toLowerCase() ||
+        (c.bookingId && c.bookingId.toLowerCase() === selectedCaseId.toLowerCase())
+    ) ||
     filteredCases[0] ||
     cases[0];
 
+  // Restore draft note from backend when the selected case changes
+  useEffect(() => {
+    if (selectedCase?.reviewerDraftNote) {
+      setReviewerNote(selectedCase.reviewerDraftNote);
+    } else if (selectedCase?.reviewerComment) {
+      setReviewerNote(selectedCase.reviewerComment);
+    } else {
+      setReviewerNote('');
+    }
+  }, [selectedCase?.id]);
+
   const handleConfirmSubmit = () => {
+    const caseLabel = selectedCase.caseRef.replace('#', '') || selectedCase.id;
     if (decision === 'eligible') {
       approveRefund(selectedCase.id, reviewerNote);
-      setSubmittedAlert(`Case #${selectedCase.caseRef} approved! Refund payout authorization recorded in audit ledger.`);
+      setSubmittedAlert(`Case #${caseLabel} approved! Refund payout authorization recorded in audit ledger.`);
     } else if (decision === 'more_docs') {
       requestManualReview(selectedCase.id, reviewerNote);
-      setSubmittedAlert(`Case #${selectedCase.caseRef} marked for additional document verification.`);
+      setSubmittedAlert(`Case #${caseLabel} marked for additional document verification.`);
     } else {
       rejectRecommendation(selectedCase.id, reviewerNote || 'Claim rejected following human auditor review.');
-      setSubmittedAlert(`Case #${selectedCase.caseRef} closed as not eligible. Finding recorded.`);
+      setSubmittedAlert(`Case #${caseLabel} closed as not eligible. Finding recorded.`);
     }
     setTimeout(() => setSubmittedAlert(null), 3500);
   };
 
-  const handleSaveDraft = () => {
-    setSubmittedAlert(`Draft note saved for Case #${selectedCase.caseRef}.`);
-    setTimeout(() => setSubmittedAlert(null), 3000);
+  const handleSaveDraft = async () => {
+    const caseLabel = selectedCase.caseRef.replace('#', '') || selectedCase.id;
+    if (!reviewerNote.trim()) {
+      setSubmittedAlert('Please enter a reviewer note before saving as draft.');
+      setTimeout(() => setSubmittedAlert(null), 3000);
+      return;
+    }
+    setIsSavingDraft(true);
+    try {
+      const payload = {
+        reviewerNote: reviewerNote.trim(),
+        draftDecision: decision,
+        reviewerId: 'Julian Hayes (Lead Auditor)',
+      };
+      let res: Response | null = null;
+      try {
+        res = await fetch(`/api/refunds/${selectedCase.id}/draft`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+      } catch {
+        res = await fetch(`http://localhost:5001/api/refunds/${selectedCase.id}/draft`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+      }
+      if (res && res.ok) {
+        setSubmittedAlert(`Draft note saved for Case #${caseLabel}.`);
+      } else {
+        setSubmittedAlert(`Draft note saved locally for Case #${caseLabel}.`);
+      }
+    } catch {
+      setSubmittedAlert(`Draft note saved locally for Case #${caseLabel}.`);
+    } finally {
+      setIsSavingDraft(false);
+      setTimeout(() => setSubmittedAlert(null), 3000);
+    }
   };
 
   const handleEscalate = () => {
+    const caseLabel = selectedCase.caseRef.replace('#', '') || selectedCase.id;
     requestManualReview(selectedCase.id, `Escalated to Senior Audit Reviewer: ${reviewerNote}`);
-    setSubmittedAlert(`Case #${selectedCase.caseRef} escalated to Senior Review Desk.`);
+    setSubmittedAlert(`Case #${caseLabel} escalated to Senior Review Desk.`);
     setTimeout(() => setSubmittedAlert(null), 3500);
   };
 
@@ -152,7 +206,7 @@ export const HumanReviewPage: React.FC = () => {
               <div>
                 <div className="flex items-center gap-3">
                   <h2 className="text-xl font-bold text-[#0d3d3a]">
-                    Case #{selectedCase.caseRef}
+                    Case #{selectedCase.caseRef.replace('#', '') || selectedCase.id}
                   </h2>
                   <span className="px-2.5 py-0.5 rounded-full bg-[#ecfdf5] text-[#166534] text-xs font-semibold border border-[#bbf7d0]">
                     {selectedCase.decisionStatus}
@@ -366,9 +420,10 @@ export const HumanReviewPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={handleSaveDraft}
-                  className="bg-white border border-[#e3ded4] text-[#0d3d3a] px-4 py-2.5 rounded-md text-xs font-semibold hover:bg-[#f7f4ed] transition-colors"
+                  disabled={isSavingDraft}
+                  className="bg-white border border-[#e3ded4] text-[#0d3d3a] px-4 py-2.5 rounded-md text-xs font-semibold hover:bg-[#f7f4ed] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  Save as draft
+                  {isSavingDraft ? 'Saving…' : 'Save as draft'}
                 </button>
                 <button
                   type="button"

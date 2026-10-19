@@ -16,43 +16,120 @@ export const RefundCenterPage: React.FC = () => {
   const [bookingType, setBookingType] = useState<ModeType>('Flight');
   const [pnr, setPnr] = useState('ABC123');
   const [contact, setContact] = useState('aarav.sharma@example.com');
+  const [disruptionReason, setDisruptionReason] = useState('Cancelled by airline / operator (Flight AI-805)');
   const [trackCaseId, setTrackCaseId] = useState('RF12345');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
-  const previewCase = cases.find((c) => c.id === 'AT-9842') || cases[0];
+  const previewCase = cases[0];
 
-  const handleSubmitEligibility = (e: React.FormEvent) => {
+  const handleSubmitEligibility = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsAnalyzing(true);
-    setTimeout(() => {
-      setIsAnalyzing(false);
-      const cleanPnr = pnr.trim().toLowerCase();
-      const matchedCase = cases.find(
-        (c) =>
-          c.pnr.toLowerCase() === cleanPnr ||
-          c.id.toLowerCase() === cleanPnr ||
-          c.caseRef.replace('#', '').toLowerCase() === cleanPnr
-      );
-      if (matchedCase) {
-        navigate(`/refunds/${matchedCase.id}`);
-        return;
+    setSubmitError(null);
+
+    const cleanPnr = pnr.trim();
+
+    try {
+      // 1. Submit refund claim to backend API
+      let submitRes: Response | null = null;
+      try {
+        submitRes = await fetch('/api/refunds/submit', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            bookingId: cleanPnr,
+            contact: contact.trim(),
+            reason: disruptionReason,
+            currency: 'INR',
+          }),
+        });
+      } catch {
+        // Fallback to direct localhost if proxy was bypassed
+        try {
+          submitRes = await fetch('http://localhost:5001/api/refunds/submit', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              bookingId: cleanPnr,
+              contact: contact.trim(),
+              reason: disruptionReason,
+              currency: 'INR',
+            }),
+          });
+        } catch {}
       }
-      const matchedBooking = userBookings.find(
-        (b) =>
-          b.refLabel.toLowerCase().includes(cleanPnr) ||
-          b.id.toLowerCase() === cleanPnr
-      );
-      if (matchedBooking && matchedBooking.refundCaseId) {
-        navigate(`/refunds/${matchedBooking.refundCaseId}`);
-        return;
+
+      if (submitRes) {
+        let data: any = null;
+        try {
+          data = await submitRes.json();
+        } catch {}
+
+        // 201 Created -> navigate to newly created refund case
+        if (data && submitRes.status === 201 && data.refund?.id) {
+          navigate(`/refunds/${data.refund.id}`);
+          return;
+        }
+
+        // 409 Conflict -> existing refund case already active, navigate to track it
+        if (submitRes.status === 409 && data.refund?.id) {
+          navigate(`/refunds/${data.refund.id}`);
+          return;
+        }
+
+        // If booking not found or not eligible in backend, check local mock bookings/cases
+        if (submitRes.status === 400 || submitRes.status === 404) {
+          const matchedCase = cases.find(
+            (c) =>
+              c.pnr.toLowerCase() === cleanPnr.toLowerCase() ||
+              c.id.toLowerCase() === cleanPnr.toLowerCase() ||
+              c.caseRef.replace('#', '').toLowerCase() === cleanPnr.toLowerCase()
+          );
+          if (matchedCase) {
+            navigate(`/refunds/${matchedCase.id}`);
+            return;
+          }
+
+          const matchedBooking = userBookings.find(
+            (b) =>
+              b.refLabel.toLowerCase().includes(cleanPnr.toLowerCase()) ||
+              b.id.toLowerCase() === cleanPnr.toLowerCase()
+          );
+          if (matchedBooking && matchedBooking.refundCaseId) {
+            navigate(`/refunds/${matchedBooking.refundCaseId}`);
+            return;
+          }
+
+          setSubmitError(data.error || 'Booking not eligible for refund.');
+          setIsAnalyzing(false);
+          return;
+        }
       }
-      navigate(`/refunds/${pnr.trim().replace('#', '') || 'RF12345'}`);
-    }, 1200);
+    } catch (err: any) {
+      console.warn('Backend submit error, checking local mock store:', err);
+    }
+
+    // Fallback navigation
+    navigate(`/refunds/${cleanPnr.replace('#', '') || 'RF12345'}`);
+    setIsAnalyzing(false);
   };
 
-  const handleTrackSubmit = (e: React.FormEvent) => {
+  const handleTrackSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const cleanId = trackCaseId.trim().replace('#', '');
+
+    try {
+      const res = await fetch(`/api/refunds/${cleanId}`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data.refund?.id) {
+          navigate(`/refunds/${data.refund.id}`);
+          return;
+        }
+      }
+    } catch {}
+
     const matched = cases.find(
       (c) =>
         c.id.toLowerCase() === cleanId.toLowerCase() ||
@@ -130,6 +207,19 @@ export const RefundCenterPage: React.FC = () => {
                   </p>
                 </div>
 
+                {submitError && (
+                  <div className="p-3 rounded-lg bg-[#fee2e2] text-[#991b1b] border border-[#fecaca] text-xs font-semibold flex items-center justify-between">
+                    <span>{submitError}</span>
+                    <button
+                      type="button"
+                      onClick={() => setSubmitError(null)}
+                      className="text-[#991b1b] hover:opacity-75 font-bold cursor-pointer"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                )}
+
                 {/* Booking type selector */}
                 <div className="space-y-1.5">
                   <label className="text-xs font-bold text-[#0d3d3a] uppercase tracking-wider block">
@@ -189,12 +279,26 @@ export const RefundCenterPage: React.FC = () => {
                   <label className="text-xs font-bold text-[#0d3d3a] block">
                     Disruption or cancellation cause
                   </label>
-                  <select className="w-full border border-[#e3ded4] rounded-md px-3 py-2 text-xs font-medium focus:outline-none focus:border-[#0d6b63] bg-white">
-                    <option>Cancelled by airline / operator (Flight AI-805)</option>
-                    <option>Major delay exceeding 3 hours</option>
-                    <option>Schedule change without notice</option>
-                    <option>Connecting transit missed due to inward delay</option>
-                    <option>Medical emergency / unforeseen illness</option>
+                  <select
+                    value={disruptionReason}
+                    onChange={(e) => setDisruptionReason(e.target.value)}
+                    className="w-full border border-[#e3ded4] rounded-md px-3 py-2 text-xs font-medium focus:outline-none focus:border-[#0d6b63] bg-white"
+                  >
+                    <option value="Cancelled by airline / operator (Flight AI-805)">
+                      Cancelled by airline / operator (Flight AI-805)
+                    </option>
+                    <option value="Major delay exceeding 3 hours">
+                      Major delay exceeding 3 hours
+                    </option>
+                    <option value="Schedule change without notice">
+                      Schedule change without notice
+                    </option>
+                    <option value="Connecting transit missed due to inward delay">
+                      Connecting transit missed due to inward delay
+                    </option>
+                    <option value="Medical emergency / unforeseen illness">
+                      Medical emergency / unforeseen illness
+                    </option>
                   </select>
                 </div>
 
@@ -280,7 +384,7 @@ export const RefundCenterPage: React.FC = () => {
               <div className="flex items-center justify-between pb-3 border-b border-[#e3ded4]">
                 <div>
                   <h3 className="font-mono text-sm font-bold text-[#0d3d3a]">
-                    Case #{previewCase.caseRef}
+                    Case #{previewCase.caseRef.replace('#', '') || previewCase.id}
                   </h3>
                   <span className="text-xs text-[#6b7775]">{previewCase.carrier.route} · {previewCase.journeyDate}</span>
                 </div>
