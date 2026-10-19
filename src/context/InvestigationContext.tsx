@@ -143,15 +143,34 @@ export const InvestigationProvider: React.FC<{ children: React.ReactNode }> = ({
     return { success: false, error: lastError };
   };
 
+  const mapDraftDecisionToBackend = (d?: string): string | null => {
+    if (!d) return null;
+    const norm = d.trim().toLowerCase();
+    if (norm === 'docs' || norm === 'more_docs' || norm === 'request_info') {
+      return 'more_docs';
+    }
+    if (norm === 'eligible' || norm === 'approve') {
+      return 'eligible';
+    }
+    if (norm === 'not_eligible' || norm === 'reject') {
+      return 'not_eligible';
+    }
+    if (norm === 'adjusted') {
+      return 'adjusted';
+    }
+    return d;
+  };
+
   const saveReviewerDraft = async (
     id: string,
     note: string,
     draftDecision?: string
   ): Promise<{ success: boolean; error?: string; refund?: any }> => {
     const cleanId = id.replace('#', '').trim();
+    const mappedDecision = mapDraftDecisionToBackend(draftDecision);
     const payload = {
       reviewerNote: note.trim(),
-      draftDecision: draftDecision || null,
+      draftDecision: mappedDecision,
       reviewerId: 'Julian Hayes (Lead Auditor)',
     };
 
@@ -178,14 +197,14 @@ export const InvestigationProvider: React.FC<{ children: React.ReactNode }> = ({
                 return {
                   ...c,
                   reviewerDraftNote: note.trim(),
-                  reviewerDraftDecision: draftDecision || null,
+                  reviewerDraftDecision: mappedDecision,
                   reviewerDraftSavedAt: new Date().toISOString(),
                   auditLog: data.refund?.auditLog || [
                     {
                       id: `log-${Date.now()}`,
                       time: nowTime,
                       title: 'Reviewer Draft Note Saved',
-                      description: `Draft saved by Julian Hayes. Pending decision: ${draftDecision || 'not selected'}. Note: ${note.trim()}`,
+                      description: `Draft saved by Julian Hayes. Pending decision: ${mappedDecision || 'not selected'}. Note: ${note.trim()}`,
                       dotColor: 'bg-secondary',
                     },
                     ...c.auditLog,

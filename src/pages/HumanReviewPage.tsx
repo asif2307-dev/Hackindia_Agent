@@ -45,7 +45,9 @@ export const HumanReviewPage: React.FC = () => {
 
     if (draftNote) {
       setReviewerNote(draftNote);
-      if (draftDecision) setDecision(draftDecision);
+      if (draftDecision) {
+        setDecision(draftDecision === 'more_docs' ? 'docs' : draftDecision);
+      }
       setAdjustedAmount(String(selectedCase.claimAmount));
       return;
     }
@@ -99,7 +101,7 @@ export const HumanReviewPage: React.FC = () => {
       } else {
         setSubmittedAlert({ type: 'error', message: `Failed to approve Case #${caseLabel}: ${res.error || 'Server error'}` });
       }
-    } else if (decision === 'docs') {
+    } else if (decision === 'docs' || decision === 'more_docs') {
       res = await requestManualReview(selectedCase.id, reviewerNote);
       if (res.success) {
         setSubmittedAlert({ type: 'success', message: `Case #${caseLabel} marked for additional document verification.` });
@@ -128,7 +130,7 @@ export const HumanReviewPage: React.FC = () => {
     }
 
     setIsSavingDraft(true);
-    const res = await saveReviewerDraft(selectedCase.id, reviewerNote, decision);
+    const res = await saveReviewerDraft(selectedCase.id, reviewerNote, decision === 'docs' ? 'more_docs' : decision);
     setIsSavingDraft(false);
 
     if (res.success) {
@@ -455,7 +457,7 @@ export const HumanReviewPage: React.FC = () => {
                     type="radio"
                     name="decision"
                     value="docs"
-                    checked={decision === 'docs'}
+                    checked={decision === 'docs' || decision === 'more_docs'}
                     onChange={() => setDecision('docs')}
                     className="mt-0.5 accent-[#0d6b63]"
                   />
