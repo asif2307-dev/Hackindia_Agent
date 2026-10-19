@@ -14,6 +14,23 @@ export const RefundInvestigationsPage: React.FC = () => {
   const [tableSearch, setTableSearch] = useState<string>('');
   const [actionSuccessMsg, setActionSuccessMsg] = useState<string | null>(null);
 
+  // Derived metric counts from actual case data
+  const activeQueueCount = cases.filter(c =>
+    ['Under Human Review', 'Pending Human Approval', 'Ready for Payout', 'Awaiting Carrier Evidence', 'Audit In Progress'].includes(c.decisionStatus)
+  ).length;
+  const approvedDisbursedCount = cases.filter(c =>
+    c.decisionStatus === 'Approved' || c.decisionStatus === 'Disbursed'
+  ).length;
+  const humanReviewCount = cases.filter(c =>
+    c.decisionStatus === 'Under Human Review' || c.decisionStatus === 'Pending Human Approval'
+  ).length;
+  const carrierEvidenceCount = cases.filter(c =>
+    c.decisionStatus === 'Awaiting Carrier Evidence'
+  ).length;
+  const flaggedRejectedCount = cases.filter(c =>
+    c.decisionStatus === 'Flagged' || c.decisionStatus === 'Rejected'
+  ).length;
+
   const handleInspectCase = (id: string) => {
     selectCaseById(id);
     navigate(`/refund-investigations/${id}`);
@@ -24,10 +41,20 @@ export const RefundInvestigationsPage: React.FC = () => {
     navigate('/reviews');
   };
 
-  const handleQuickApprove = (id: string) => {
-    approveRefund(id);
-    setActionSuccessMsg(`Case #${id} approved! Payout authorization emitted.`);
-    setTimeout(() => setActionSuccessMsg(null), 3000);
+  const handleQuickApprove = async (id: string) => {
+    const targetCase = cases.find((c) => c.id === id);
+    const label = targetCase?.caseRef || id;
+    const amount = targetCase?.claimAmountFormatted || '';
+    if (!window.confirm(`Approve refund release for case #${label}${amount ? ` (${amount})` : ''}? This action will record an authorization event in the audit ledger.`)) {
+      return;
+    }
+    const res = await approveRefund(id);
+    if (res.success) {
+      setActionSuccessMsg(`Case #${label} approved! Payout authorization emitted.`);
+    } else {
+      setActionSuccessMsg(`Approval failed for #${label}: ${res.error || 'Backend error'}`);
+    }
+    setTimeout(() => setActionSuccessMsg(null), 3500);
   };
 
   const filteredInvestigations = cases.filter((c) => {
@@ -97,7 +124,7 @@ export const RefundInvestigationsPage: React.FC = () => {
           </button>
 
           <button
-            onClick={() => handleInspectCase('AT-9842')}
+            onClick={() => navigate('/reviewer')}
             className="flex items-center gap-space-xs bg-gradient-to-r from-[#006D77] to-[#20B8B0] hover:from-[#005a63] hover:to-[#1aa39b] text-white font-label-md text-xs sm:text-sm font-bold px-space-lg py-2.5 rounded-full shadow-md hover:shadow-lg transition-all cursor-pointer"
             type="button"
           >
@@ -117,7 +144,7 @@ export const RefundInvestigationsPage: React.FC = () => {
             </div>
           </div>
           <div className="mt-space-md flex flex-col">
-            <span className="font-metric-display text-metric-display text-on-surface tracking-tight font-bold">42</span>
+            <span className="font-metric-display text-metric-display text-on-surface tracking-tight font-bold">{activeQueueCount}</span>
             <span className="font-body-sm text-xs text-on-surface-variant mt-1">Claims currently under arbitration</span>
           </div>
           <div className="mt-space-sm pt-space-xs flex items-center justify-between font-label-sm text-xs text-on-surface-variant/80 border-t border-surface-container">
@@ -134,7 +161,7 @@ export const RefundInvestigationsPage: React.FC = () => {
             </div>
           </div>
           <div className="mt-space-md flex flex-col">
-            <span className="font-metric-display text-metric-display text-on-surface tracking-tight font-bold">28</span>
+            <span className="font-metric-display text-metric-display text-on-surface tracking-tight font-bold">{approvedDisbursedCount}</span>
             <span className="font-body-sm text-xs text-primary font-medium mt-1">₹42.5L statutory payouts cleared</span>
           </div>
           <div className="mt-space-sm pt-space-xs flex items-center justify-between font-label-sm text-xs text-on-surface-variant/80 border-t border-surface-container">
@@ -151,7 +178,7 @@ export const RefundInvestigationsPage: React.FC = () => {
             </div>
           </div>
           <div className="mt-space-md flex flex-col">
-            <span className="font-metric-display text-metric-display text-on-surface tracking-tight font-bold">6</span>
+            <span className="font-metric-display text-metric-display text-on-surface tracking-tight font-bold">{humanReviewCount}</span>
             <span className="font-body-sm text-xs text-error font-medium mt-1">High-impact / anomaly holds</span>
           </div>
           <div className="mt-space-sm pt-space-xs flex items-center justify-between font-label-sm text-xs text-on-surface-variant/80 border-t border-surface-container">
@@ -168,7 +195,7 @@ export const RefundInvestigationsPage: React.FC = () => {
             </div>
           </div>
           <div className="mt-space-md flex flex-col">
-            <span className="font-metric-display text-metric-display text-on-surface tracking-tight font-bold">5</span>
+            <span className="font-metric-display text-metric-display text-on-surface tracking-tight font-bold">{carrierEvidenceCount}</span>
             <span className="font-body-sm text-xs text-on-surface-variant mt-1">Awaiting airline ops logs</span>
           </div>
           <div className="mt-space-sm pt-space-xs flex items-center justify-between font-label-sm text-xs text-on-surface-variant/80 border-t border-surface-container">
@@ -228,7 +255,7 @@ export const RefundInvestigationsPage: React.FC = () => {
             }`}
             type="button"
           >
-            All (42)
+            All ({cases.length})
           </button>
           <button
             onClick={() => setActiveTab('approved')}
@@ -239,7 +266,7 @@ export const RefundInvestigationsPage: React.FC = () => {
             }`}
             type="button"
           >
-            Approved & Disbursed (28)
+            Approved & Disbursed ({approvedDisbursedCount})
           </button>
           <button
             onClick={() => setActiveTab('review')}
@@ -250,7 +277,7 @@ export const RefundInvestigationsPage: React.FC = () => {
             }`}
             type="button"
           >
-            Under Human Review (6)
+            Under Human Review ({humanReviewCount})
           </button>
           <button
             onClick={() => setActiveTab('awaiting')}
@@ -261,7 +288,7 @@ export const RefundInvestigationsPage: React.FC = () => {
             }`}
             type="button"
           >
-            Awaiting Carrier Evidence (5)
+            Awaiting Carrier Evidence ({carrierEvidenceCount})
           </button>
           <button
             onClick={() => setActiveTab('flagged')}
@@ -272,7 +299,7 @@ export const RefundInvestigationsPage: React.FC = () => {
             }`}
             type="button"
           >
-            Flagged / Rejected (3)
+            Flagged / Rejected ({flaggedRejectedCount})
           </button>
         </div>
 
@@ -405,7 +432,7 @@ export const RefundInvestigationsPage: React.FC = () => {
         {/* Pagination Footer */}
         <div className="flex flex-col sm:flex-row items-center justify-between gap-space-sm pt-space-xs border-t border-surface-container">
           <span className="font-body-sm text-xs text-on-surface-variant">
-            Showing <strong className="text-on-surface font-semibold">1–{filteredInvestigations.length}</strong> of 42 active investigations
+            Showing <strong className="text-on-surface font-semibold">1–{filteredInvestigations.length}</strong> of {cases.length} active investigations
           </span>
           <div className="flex items-center gap-space-xs">
             <button
