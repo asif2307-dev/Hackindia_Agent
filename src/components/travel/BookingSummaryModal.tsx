@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTravelBooking } from '../../context/TravelBookingContext';
 
@@ -14,6 +14,15 @@ export const BookingSummaryModal: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isVerifying, setIsVerifying] = useState(false);
   const [paymentError, setPaymentError] = useState<string | null>(null);
+  const [sessionBookingId, setSessionBookingId] = useState<string>('');
+
+  // Anchor stable bookingId per modal session to allow backend order deduplication across payment retries
+  useEffect(() => {
+    if (summaryModalTrip) {
+      setSessionBookingId(`BK-${Date.now().toString().slice(-6)}`);
+      setPaymentError(null);
+    }
+  }, [summaryModalTrip?.id]);
 
   if (!summaryModalTrip) return null;
 
@@ -27,7 +36,8 @@ export const BookingSummaryModal: React.FC = () => {
     setIsSubmitting(true);
     setPaymentError(null);
 
-    const bookingId = `BK-${Date.now().toString().slice(-6)}`;
+    // Reuse sessionBookingId across payment retries in the same modal session
+    const bookingId = sessionBookingId || `BK-${Date.now().toString().slice(-6)}`;
 
     try {
       // 1. Request backend to create authoritative Razorpay Order
@@ -92,6 +102,9 @@ export const BookingSummaryModal: React.FC = () => {
             setIsVerifying(true);
             try {
               // 3. Server-side payment signature verification
+              let verifySuccessful = false;
+              let verifyErrorMessage = '';
+
               try {
                 const verifyRes = await fetch('/api/payment/verify', {
                   method: 'POST',
@@ -104,14 +117,37 @@ export const BookingSummaryModal: React.FC = () => {
                   }),
                 });
                 const verifyJson = await verifyRes.json();
-                if (!verifyJson.success) {
-                  throw new Error(verifyJson.error || 'Signature verification rejected by server');
+                if (verifyRes.ok && verifyJson.success) {
+                  verifySuccessful = true;
+                } else {
+                  verifyErrorMessage = verifyJson.error || 'Server signature verification rejected';
                 }
               } catch (verifyErr: any) {
-                if (verifyErr.message?.includes('Signature verification rejected')) {
-                  throw verifyErr;
+                // Try direct port fallback if Vite proxy had a network hiccup
+                try {
+                  const directVerify = await fetch('http://localhost:5001/api/payment/verify', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                      bookingId,
+                      razorpay_order_id: response.razorpay_order_id,
+                      razorpay_payment_id: response.razorpay_payment_id,
+                      razorpay_signature: response.razorpay_signature,
+                    }),
+                  });
+                  const directJson = await directVerify.json();
+                  if (directVerify.ok && directJson.success) {
+                    verifySuccessful = true;
+                  } else {
+                    verifyErrorMessage = directJson.error || 'Server signature verification rejected';
+                  }
+                } catch (netErr: any) {
+                  verifyErrorMessage = 'Unable to reach backend verification server: ' + netErr.message;
                 }
-                // Allow client-side test fallback when backend is temporarily offline
+              }
+
+              if (!verifySuccessful) {
+                throw new Error(verifyErrorMessage || 'Payment signature could not be verified by server.');
               }
 
               confirmBooking({
@@ -152,19 +188,11 @@ export const BookingSummaryModal: React.FC = () => {
         });
         rzp.open();
       } else {
-        // Fallback test simulation when Razorpay CDN is blocked
+        // Honest error handling when Razorpay CDN is unavailable
         setIsSubmitting(false);
-        setIsVerifying(true);
-        setTimeout(() => {
-          confirmBooking({
-            razorpayOrderId: orderData.orderId,
-            razorpayPaymentId: `pay_sim_${Date.now()}`,
-            razorpaySignature: 'simulated_valid_signature',
-            paymentStatus: 'PAID',
-          });
-          setIsVerifying(false);
-          navigate('/bookings');
-        }, 900);
+        setPaymentError(
+          'Payment Gateway SDK (Razorpay) failed to load. Please check your internet connection or disable ad-blockers and try again.'
+        );
       }
     } catch (err: any) {
       setIsSubmitting(false);
@@ -347,7 +375,14 @@ export const BookingSummaryModal: React.FC = () => {
             {summaryModalTrip.serviceType === 'hotels' ? (
               <>
                 <div className="flex justify-between text-[#5c6967]">
-                  <span>Room Charge ({summaryModalTrip.nights || 1} Night{(summaryModalTrip.nights || 1) > 1 ? 's' : ''} × ₹ {(summaryModalTrip.baseRatePerUnit || Math.round(summaryModalTrip.fareAmount / (summaryModalTrip.nights || 1))).toLocaleString('en-IN')})</span>
+                  <span>
+                    Room Charge ({summaryModalTrip.nights || 1} Night{(summaryModalTrip.nights || 1) > 1 ? 's' : ''}
+                    {(summaryModalTrip.rooms || 1) > 1 ? ` × ${summaryModalTrip.rooms} Rooms` : ''} × ₹{' '}
+                    {(
+                      summaryModalTrip.baseRatePerUnit ||
+                      Math.round(summaryModalTrip.fareAmount / ((summaryModalTrip.nights || 1) * (summaryModalTrip.rooms || 1)))
+                    ).toLocaleString('en-IN')})
+                  </span>
                   <span className="font-medium text-[#192524]">{summaryModalTrip.fareFormatted}</span>
                 </div>
                 <div className="flex justify-between text-[#5c6967]">
