@@ -5,6 +5,7 @@ import { InvestigationProvider } from './context/InvestigationContext';
 import { TravelBookingProvider } from './context/TravelBookingContext';
 import { BookingSummaryModal } from './components/travel/BookingSummaryModal';
 import { ScrollToTop } from './components/common/ScrollToTop';
+import { ProtectedRoute } from './components/common/ProtectedRoute';
 
 // Traveller Pages (Mockup Pages 1-10, 13-21)
 import { LandingPage } from './pages/LandingPage';
@@ -48,32 +49,130 @@ export const App: React.FC = () => {
               <Route path="/bookings" element={<BookingsPage />} />
               <Route path="/refunds" element={<RefundCenterPage />} />
               <Route path="/refunds/:id" element={<CaseDetailPage />} />
-              <Route path="/refund-investigations/:id" element={<CaseDetailPage />} />
               <Route path="/hotels" element={<HotelsPage />} />
               <Route path="/trains" element={<TrainsPage />} />
               <Route path="/buses" element={<BusesPage />} />
               <Route path="/cabs" element={<CabsPage />} />
               <Route path="/holidays" element={<HolidaysPage />} />
               <Route path="/help" element={<HelpPage />} />
-              <Route path="/account" element={<SettingsPage />} />
-              <Route path="/settings" element={<SettingsPage />} />
+              <Route
+                path="/account"
+                element={
+                  <ProtectedRoute>
+                    <SettingsPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/settings"
+                element={
+                  <ProtectedRoute>
+                    <SettingsPage />
+                  </ProtectedRoute>
+                }
+              />
               <Route path="/signin" element={<SignInPage />} />
               <Route path="/signup" element={<SignUpPage />} />
 
-              {/* Internal Reviewer Console (PDF Mockups: Pages 11 & 12) */}
-              <Route path="/reviewer" element={<HumanReviewPage />} />
-              <Route path="/reviewer/queue" element={<HumanReviewPage />} />
-              <Route path="/reviewer/cases" element={<RefundInvestigationsPage />} />
-              <Route path="/reviewer/analytics" element={<AnalyticsPage />} />
-              <Route path="/reviewer/audit" element={<DashboardPage />} />
-              <Route path="/reviewer/settings" element={<SettingsPage />} />
+              {/* Internal Reviewer Console (PDF Mockups: Pages 11 & 12 - Protected: Reviewer role required) */}
+              <Route
+                path="/reviewer"
+                element={
+                  <ProtectedRoute requireReviewer>
+                    <HumanReviewPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/reviewer/queue"
+                element={
+                  <ProtectedRoute requireReviewer>
+                    <HumanReviewPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/reviewer/cases"
+                element={
+                  <ProtectedRoute requireReviewer>
+                    <RefundInvestigationsPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/reviewer/analytics"
+                element={
+                  <ProtectedRoute requireReviewer>
+                    <AnalyticsPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/reviewer/audit"
+                element={
+                  <ProtectedRoute requireReviewer>
+                    <DashboardPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/reviewer/settings"
+                element={
+                  <ProtectedRoute requireReviewer>
+                    <SettingsPage />
+                  </ProtectedRoute>
+                }
+              />
 
-              {/* Backwards-compatible routes for internal operations */}
-              <Route path="/reviews" element={<HumanReviewPage />} />
-              <Route path="/analytics" element={<AnalyticsPage />} />
-              <Route path="/refund-investigations" element={<RefundInvestigationsPage />} />
-              <Route path="/dashboard" element={<DashboardPage />} />
-              <Route path="/overview" element={<DashboardPage />} />
+              {/* Backwards-compatible routes for internal operations (Protected: Reviewer role required) */}
+              <Route
+                path="/reviews"
+                element={
+                  <ProtectedRoute requireReviewer>
+                    <HumanReviewPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/analytics"
+                element={
+                  <ProtectedRoute requireReviewer>
+                    <AnalyticsPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/refund-investigations"
+                element={
+                  <ProtectedRoute requireReviewer>
+                    <RefundInvestigationsPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/refund-investigations/:id"
+                element={
+                  <ProtectedRoute requireReviewer>
+                    <CaseDetailPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/dashboard"
+                element={
+                  <ProtectedRoute requireReviewer>
+                    <DashboardPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/overview"
+                element={
+                  <ProtectedRoute requireReviewer>
+                    <DashboardPage />
+                  </ProtectedRoute>
+                }
+              />
 
               {/* 404 Fallback Route */}
               <Route path="*" element={<NotFoundPage />} />

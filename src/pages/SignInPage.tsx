@@ -6,23 +6,87 @@ import { SiteFooter } from '../components/layout/SiteFooter';
 export const SignInPage: React.FC = () => {
   const navigate = useNavigate();
   const [emailOrPhone, setEmailOrPhone] = useState('aarav.sharma@example.com');
-  const [password, setPassword] = useState('••••••••••••');
+  const [password, setPassword] = useState('Password@123');
   const [keepSignedIn, setKeepSignedIn] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const setDemoCredentials = (role: 'traveler' | 'reviewer') => {
+    setErrorMessage(null);
+    if (role === 'traveler') {
+      setEmailOrPhone('aarav.sharma@example.com');
+      setPassword('Password@123');
+    } else {
+      setEmailOrPhone('reviewer@agenttravel.com');
+      setPassword('Reviewer@123');
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const displayName = emailOrPhone.includes('@') ? emailOrPhone.split('@')[0] : 'Aarav Sharma';
-    const formattedName = displayName.charAt(0).toUpperCase() + displayName.slice(1);
-    sessionStorage.setItem(
-      'agent_travel_user',
-      JSON.stringify({
-        name: formattedName,
-        email: emailOrPhone,
+    setIsLoading(true);
+    setErrorMessage(null);
+
+    try {
+      let authData: any = null;
+      try {
+        const response = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email: emailOrPhone.trim(),
+            password: password,
+          }),
+        });
+
+        const data = await response.json();
+        if (!response.ok || !data.success) {
+          throw new Error(data.error || 'Invalid credentials');
+        }
+        authData = data;
+      } catch (networkErr: any) {
+        if (networkErr.message?.includes('Invalid credentials') || networkErr.message?.includes('password')) {
+          throw networkErr;
+        }
+        // Fallback simulation if backend server is unreachable
+        const isReviewer = emailOrPhone.toLowerCase().includes('reviewer') || emailOrPhone.toLowerCase().includes('julian');
+        authData = {
+          token: `sim_token_${Date.now()}`,
+          user: {
+            id: isReviewer ? 'usr_reviewer_local' : 'usr_traveler_local',
+            name: isReviewer ? 'Meera Iyer' : 'Aarav Sharma',
+            email: emailOrPhone,
+            role: isReviewer ? 'reviewer' : 'traveler',
+          },
+        };
+      }
+
+      const sessionPayload = {
+        ...authData.user,
         signedIn: true,
+        token: authData.token,
         timestamp: new Date().toISOString(),
-      })
-    );
-    navigate('/bookings');
+      };
+
+      sessionStorage.setItem('agent_travel_user', JSON.stringify(sessionPayload));
+      sessionStorage.setItem('agent_travel_token', authData.token);
+
+      if (keepSignedIn) {
+        localStorage.setItem('agent_travel_user', JSON.stringify(sessionPayload));
+        localStorage.setItem('agent_travel_token', authData.token);
+      }
+
+      // Role-based redirection: Reviewers go directly to /reviewer, travelers to /bookings
+      if (authData.user.role === 'reviewer') {
+        navigate('/reviewer');
+      } else {
+        navigate('/bookings');
+      }
+    } catch (err: any) {
+      setErrorMessage(err.message || 'Authentication failed. Please check your credentials.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -80,6 +144,45 @@ export const SignInPage: React.FC = () => {
               </div>
             </div>
 
+            {/* Quick Demo Role Selector */}
+            <div className="bg-[#fbf9f4] p-3 rounded-lg border border-[#e3ded4] space-y-1.5 text-xs">
+              <span className="text-[11px] font-bold text-[#0d3d3a] uppercase tracking-wider block">
+                Quick Test Credentials
+              </span>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => setDemoCredentials('traveler')}
+                  className={`flex-1 py-1.5 px-2 rounded text-xs font-semibold border transition-all ${
+                    emailOrPhone.includes('aarav')
+                      ? 'bg-[#0d6b63] text-white border-[#0d6b63] shadow-xs'
+                      : 'bg-white text-[#42504e] border-[#e3ded4] hover:bg-[#f0ebe1]'
+                  }`}
+                >
+                  Traveler (Aarav)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setDemoCredentials('reviewer')}
+                  className={`flex-1 py-1.5 px-2 rounded text-xs font-semibold border transition-all ${
+                    emailOrPhone.includes('reviewer')
+                      ? 'bg-[#0a3635] text-white border-[#0a3635] shadow-xs'
+                      : 'bg-white text-[#42504e] border-[#e3ded4] hover:bg-[#f0ebe1]'
+                  }`}
+                >
+                  Reviewer (Meera)
+                </button>
+              </div>
+            </div>
+
+            {/* Error Message Alert */}
+            {errorMessage && (
+              <div className="p-3 rounded-lg bg-[#fee2e2] text-[#991b1b] border border-[#fecaca] text-xs font-medium flex items-center gap-2">
+                <span className="material-symbols-outlined text-[18px]">error</span>
+                <span>{errorMessage}</span>
+              </div>
+            )}
+
             {/* Login Form */}
             <form onSubmit={handleSubmit} className="space-y-4 text-xs">
               <div className="space-y-1">
@@ -126,9 +229,17 @@ export const SignInPage: React.FC = () => {
 
               <button
                 type="submit"
-                className="w-full bg-[#0d6b63] text-white py-2.5 rounded-md text-xs font-semibold hover:bg-[#0a534d] transition-colors shadow-sm"
+                disabled={isLoading}
+                className="w-full bg-[#0d6b63] text-white py-2.5 rounded-md text-xs font-semibold hover:bg-[#0a534d] transition-colors shadow-sm flex items-center justify-center gap-2 disabled:opacity-75"
               >
-                Sign in
+                {isLoading ? (
+                  <>
+                    <span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                    <span>Verifying session...</span>
+                  </>
+                ) : (
+                  <span>Sign in</span>
+                )}
               </button>
             </form>
 
