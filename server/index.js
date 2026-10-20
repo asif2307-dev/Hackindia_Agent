@@ -11,6 +11,7 @@ import dotenv from 'dotenv';
 import crypto from 'crypto';
 import Razorpay from 'razorpay';
 import { db } from './awsConfig.js';
+import refundRouter from './refundRoutes.js';
 
 dotenv.config();
 
@@ -73,6 +74,9 @@ app.post(
 
 // 3. Standard JSON body parser for all other routes
 app.use(express.json());
+
+// 4. Refunds & Reviewer endpoints
+app.use('/api/refunds', refundRouter);
 
 // --- ROUTES ---
 

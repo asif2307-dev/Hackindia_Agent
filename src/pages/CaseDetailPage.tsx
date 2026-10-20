@@ -1,25 +1,61 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { SiteHeader } from '../components/layout/SiteHeader';
 import { SiteFooter } from '../components/layout/SiteFooter';
 import { useInvestigation } from '../context/InvestigationContext';
+import { InvestigationCase } from '../types';
 import { primaryCaseAT9842 } from '../data/mockData';
 
 export const CaseDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const { cases } = useInvestigation();
+  const [backendCase, setBackendCase] = useState<InvestigationCase | null>(null);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
 
   const cleanParam = id?.trim().toLowerCase() || 'rf12345';
-  const currentCase = cases.find(
+  const isMockDefault = cleanParam === 'at-9842' || cleanParam === '482910' || cleanParam === 'rf12345';
+
+  const localMatched = cases.find(
     (c) =>
       c.id.toLowerCase() === cleanParam ||
       c.caseRef.toLowerCase().replace('#', '') === cleanParam.replace('#', '') ||
       c.pnr.toLowerCase() === cleanParam ||
+      (c.bookingId && c.bookingId.toLowerCase() === cleanParam) ||
       `rf${c.pnr}`.toLowerCase() === cleanParam ||
       `rf${c.id}`.toLowerCase() === cleanParam
-  ) || primaryCaseAT9842;
+  );
 
-  const displayCaseId = currentCase.caseRef.replace('#', '') || currentCase.id;
+  useEffect(() => {
+    if (!id) {
+      setIsLoading(false);
+      return;
+    }
+    const cleanId = id.trim().replace(/^#/, '');
+    const fetchLiveCase = async () => {
+      setIsLoading(true);
+      try {
+        let res: Response | null = null;
+        try {
+          res = await fetch(`/api/refunds/${cleanId}`);
+        } catch {
+          res = await fetch(`http://localhost:5001/api/refunds/${cleanId}`);
+        }
+        if (res && res.ok) {
+          const data = await res.json();
+          if (data.refund) {
+            setBackendCase(data.refund);
+          }
+        }
+      } catch (err) {
+        console.warn('Error fetching live refund case:', err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchLiveCase();
+  }, [id]);
+
+  const currentCase = backendCase || localMatched || (isMockDefault ? primaryCaseAT9842 : null);
 
   const [uploadedFiles, setUploadedFiles] = useState<string[]>([
     'cancellation_notice.pdf',
@@ -37,6 +73,51 @@ export const CaseDetailPage: React.FC = () => {
     setUploadedFiles((prev) => [...prev, newDoc]);
   };
 
+  if (isLoading && !currentCase) {
+    return (
+      <div className="min-h-screen bg-[#f7f4ed] flex flex-col font-sans text-[#192524] antialiased">
+        <SiteHeader activeTab="refunds" />
+        <main className="flex-1 w-full site-container py-16 text-center">
+          <div className="inline-block p-6 bg-white rounded-xl border border-[#e3ded4] shadow-sm max-w-md mx-auto">
+            <div className="w-8 h-8 border-2 border-[#0d6b63] border-t-transparent rounded-full animate-spin mx-auto mb-3" />
+            <h3 className="text-sm font-bold text-[#0d3d3a]">Loading Case Details...</h3>
+            <p className="text-xs text-[#5c6967] mt-1">Retrieving verified booking and refund dossier for #{id}</p>
+          </div>
+        </main>
+        <SiteFooter />
+      </div>
+    );
+  }
+
+  if (!currentCase) {
+    return (
+      <div className="min-h-screen bg-[#f7f4ed] flex flex-col font-sans text-[#192524] antialiased">
+        <SiteHeader activeTab="refunds" />
+        <main className="flex-1 w-full site-container py-16 text-center">
+          <div className="p-8 bg-white rounded-xl border border-[#e3ded4] shadow-sm max-w-md mx-auto space-y-4">
+            <div className="w-12 h-12 rounded-full bg-[#fee2e2] text-[#991b1b] flex items-center justify-center font-bold text-lg mx-auto">
+              ✕
+            </div>
+            <h2 className="text-lg font-bold text-[#0d3d3a]">Refund Case Not Found</h2>
+            <p className="text-xs text-[#5c6967]">
+              No refund case or eligible booking record was found for "{id}".
+            </p>
+            <div className="pt-2">
+              <Link
+                to="/refunds"
+                className="inline-block bg-[#0d6b63] text-white px-5 py-2 rounded-md text-xs font-semibold hover:bg-[#0a544e] transition-colors"
+              >
+                Back to Refund Center
+              </Link>
+            </div>
+          </div>
+        </main>
+        <SiteFooter />
+      </div>
+    );
+  }
+
+  const displayCaseId = currentCase.caseRef.replace('#', '') || currentCase.id;
   const isApprovedOrDisbursed = currentCase.decisionStatus === 'Approved' || currentCase.decisionStatus === 'Disbursed';
   const isRejected = currentCase.decisionStatus === 'Rejected';
 
