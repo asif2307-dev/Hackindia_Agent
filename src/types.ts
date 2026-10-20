@@ -44,6 +44,7 @@ export interface AuditLogItem {
 export interface InvestigationCase {
   id: string;
   caseRef: string;
+  bookingId?: string;
   pnr: string;
   traveler: {
     name: string;
@@ -77,6 +78,9 @@ export interface InvestigationCase {
   humanReviewRequired: boolean;
   assignedAuditor: string;
   reviewerComment?: string;
+  reviewerDraftNote?: string;
+  reviewerDraftDecision?: string | null;
+  reviewerDraftSavedAt?: string;
   steps: InvestigationStep[];
   artifacts: EvidenceArtifact[];
   auditLog: AuditLogItem[];

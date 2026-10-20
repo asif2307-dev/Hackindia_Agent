@@ -38,3 +38,7 @@ Thumbs.db
 .idea/
 .vscode/*
 !.vscode/extensions.json
+
+# Test-isolated data stores (cleaned by test runner, but guard against accidents)
+server/data/store.refund-test.json
+server/data/store.refund-test.json.tmp
