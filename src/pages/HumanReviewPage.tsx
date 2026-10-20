@@ -3,14 +3,24 @@ import { ReviewerHeader } from '../components/layout/ReviewerHeader';
 import { useInvestigation } from '../context/InvestigationContext';
 
 export const HumanReviewPage: React.FC = () => {
-  const { cases, approveRefund, requestManualReview, rejectRecommendation } = useInvestigation();
+  const { cases, approveRefund, requestManualReview, rejectRecommendation, saveReviewerDraft } = useInvestigation();
 
   const [selectedFilter, setSelectedFilter] = useState<'All' | 'Ready' | 'Docs'>('All');
   const [selectedCaseId, setSelectedCaseId] = useState<string>('AT-9842');
   const [decision, setDecision] = useState<string>('eligible');
+
+  const [adjustedAmount, setAdjustedAmount] = useState<string>('');
+  const [reviewerNote, setReviewerNote] = useState<string>(
+    'I have reviewed the AI findings and the supporting documents. Carrier operational cancellation confirmed in GDS logs.'
+  );
+  const [submittedAlert, setSubmittedAlert] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+  const [isSavingDraft, setIsSavingDraft] = useState<boolean>(false);
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+
   const [reviewerNote, setReviewerNote] = useState<string>('');
   const [isSavingDraft, setIsSavingDraft] = useState<boolean>(false);
   const [submittedAlert, setSubmittedAlert] = useState<string | null>(null);
+
 
   // Filter cases relevant for human review queue
   const reviewQueue = cases.filter(
@@ -39,6 +49,108 @@ export const HumanReviewPage: React.FC = () => {
     filteredCases[0] ||
     cases[0];
 
+
+  // Restore backend draft or reviewer note when selected case changes or loads
+  useEffect(() => {
+    if (!selectedCase) return;
+    const draftNote = (selectedCase as any)?.reviewerDraftNote;
+    const draftDecision = (selectedCase as any)?.reviewerDraftDecision;
+
+    if (draftNote) {
+      setReviewerNote(draftNote);
+      if (draftDecision) {
+        setDecision(draftDecision === 'more_docs' ? 'docs' : draftDecision);
+      }
+      setAdjustedAmount(String(selectedCase.claimAmount));
+      return;
+    }
+
+    if (selectedCase.reviewerComment) {
+      setReviewerNote(selectedCase.reviewerComment);
+      setAdjustedAmount(String(selectedCase.claimAmount));
+      return;
+    }
+
+    // Default initial state for cases without draft
+    setDecision('eligible');
+    setReviewerNote('I have reviewed the AI findings and the supporting documents. Carrier operational cancellation confirmed in GDS logs.');
+    setAdjustedAmount(String(selectedCase.claimAmount));
+  }, [selectedCase?.id, selectedCase?.claimAmount, (selectedCase as any)?.reviewerDraftNote]);
+
+  const parsedAdjusted = parseFloat(adjustedAmount);
+  const isAdjustedInvalid = decision === 'adjusted' && (
+    !adjustedAmount.trim() ||
+    isNaN(parsedAdjusted) ||
+    parsedAdjusted <= 0 ||
+    parsedAdjusted > selectedCase.claimAmount
+  );
+
+  const handleConfirmSubmit = async () => {
+    const caseLabel = selectedCase.caseRef.replace('#', '') || selectedCase.id;
+    setIsSubmitting(true);
+    let res: { success: boolean; error?: string } = { success: false };
+
+    if (decision === 'eligible') {
+      res = await approveRefund(selectedCase.id, reviewerNote);
+      if (res.success) {
+        setSubmittedAlert({ type: 'success', message: `Case #${caseLabel} approved! Refund payout authorization recorded in audit ledger.` });
+      } else {
+        setSubmittedAlert({ type: 'error', message: `Failed to approve Case #${caseLabel}: ${res.error || 'Server error'}` });
+      }
+    } else if (decision === 'adjusted') {
+      if (isAdjustedInvalid) {
+        setIsSubmitting(false);
+        setSubmittedAlert({ type: 'error', message: `Please enter a valid adjusted amount between ₹1 and ${selectedCase.claimAmountFormatted}.` });
+        setTimeout(() => setSubmittedAlert(null), 3500);
+        return;
+      }
+      res = await approveRefund(
+        selectedCase.id,
+        `Approved with adjusted estimate (₹${parsedAdjusted.toLocaleString('en-IN')}): ${reviewerNote}`,
+        parsedAdjusted
+      );
+      if (res.success) {
+        setSubmittedAlert({ type: 'success', message: `Case #${caseLabel} approved with adjusted amount of ₹${parsedAdjusted.toLocaleString('en-IN')}!` });
+      } else {
+        setSubmittedAlert({ type: 'error', message: `Failed to approve Case #${caseLabel}: ${res.error || 'Server error'}` });
+      }
+    } else if (decision === 'docs' || decision === 'more_docs') {
+      res = await requestManualReview(selectedCase.id, reviewerNote);
+      if (res.success) {
+        setSubmittedAlert({ type: 'success', message: `Case #${caseLabel} marked for additional document verification.` });
+      } else {
+        setSubmittedAlert({ type: 'error', message: `Failed to update Case #${caseLabel}: ${res.error || 'Server error'}` });
+      }
+    } else if (decision === 'not_eligible') {
+      res = await rejectRecommendation(selectedCase.id, reviewerNote || 'Claim rejected following human auditor review.');
+      if (res.success) {
+        setSubmittedAlert({ type: 'success', message: `Case #${caseLabel} closed as not eligible. Finding recorded.` });
+      } else {
+        setSubmittedAlert({ type: 'error', message: `Failed to reject Case #${caseLabel}: ${res.error || 'Server error'}` });
+      }
+    }
+
+    setIsSubmitting(false);
+    setTimeout(() => setSubmittedAlert(null), 3500);
+  };
+
+  const handleSaveDraft = async () => {
+    const caseLabel = selectedCase.caseRef.replace('#', '') || selectedCase.id;
+    if (!reviewerNote.trim()) {
+      setSubmittedAlert({ type: 'error', message: 'Please enter a reviewer note before saving as draft.' });
+      setTimeout(() => setSubmittedAlert(null), 3500);
+      return;
+    }
+
+    setIsSavingDraft(true);
+    const res = await saveReviewerDraft(selectedCase.id, reviewerNote, decision === 'docs' ? 'more_docs' : decision);
+    setIsSavingDraft(false);
+
+    if (res.success) {
+      setSubmittedAlert({ type: 'success', message: `Draft note saved for Case #${caseLabel}.` });
+    } else {
+      setSubmittedAlert({ type: 'error', message: `Failed to save draft for Case #${caseLabel}: ${res.error || 'Server error'}` });
+
   // Restore draft note from backend when the selected case changes
   useEffect(() => {
     if (selectedCase?.reviewerDraftNote) {
@@ -61,9 +173,23 @@ export const HumanReviewPage: React.FC = () => {
     } else {
       rejectRecommendation(selectedCase.id, reviewerNote || 'Claim rejected following human auditor review.');
       setSubmittedAlert(`Case #${caseLabel} closed as not eligible. Finding recorded.`);
+
     }
     setTimeout(() => setSubmittedAlert(null), 3500);
   };
+
+
+  const handleEscalate = async () => {
+    const caseLabel = selectedCase.caseRef.replace('#', '') || selectedCase.id;
+    setIsSubmitting(true);
+    const res = await requestManualReview(selectedCase.id, `Escalated to Senior Audit Reviewer: ${reviewerNote}`, true);
+    setIsSubmitting(false);
+
+    if (res.success) {
+      setSubmittedAlert({ type: 'success', message: `Case #${caseLabel} escalated to Senior Review Desk.` });
+    } else {
+      setSubmittedAlert({ type: 'error', message: `Failed to escalate Case #${caseLabel}: ${res.error || 'Server error'}` });
+    }
 
   const handleSaveDraft = async () => {
     const caseLabel = selectedCase.caseRef.replace('#', '') || selectedCase.id;
@@ -110,6 +236,7 @@ export const HumanReviewPage: React.FC = () => {
     const caseLabel = selectedCase.caseRef.replace('#', '') || selectedCase.id;
     requestManualReview(selectedCase.id, `Escalated to Senior Audit Reviewer: ${reviewerNote}`);
     setSubmittedAlert(`Case #${caseLabel} escalated to Senior Review Desk.`);
+
     setTimeout(() => setSubmittedAlert(null), 3500);
   };
 
@@ -119,9 +246,21 @@ export const HumanReviewPage: React.FC = () => {
 
       {/* Action Notification */}
       {submittedAlert && (
-        <div className="fixed top-20 right-6 z-50 p-4 rounded-xl bg-[#0a3635] text-white font-semibold shadow-2xl flex items-center gap-2.5 text-xs animate-fade-in border border-[#185e5b]">
-          <span className="material-symbols-outlined text-[18px] text-[#20B8B0]">verified</span>
-          <span>{submittedAlert}</span>
+        <div
+          className={`fixed top-20 right-6 z-50 p-4 rounded-xl text-white font-semibold shadow-2xl flex items-center gap-2.5 text-xs animate-fade-in border ${
+            submittedAlert.type === 'error'
+              ? 'bg-[#7f1d1d] border-[#991b1b]'
+              : 'bg-[#0a3635] border-[#185e5b]'
+          }`}
+        >
+          <span
+            className={`material-symbols-outlined text-[18px] ${
+              submittedAlert.type === 'error' ? 'text-[#fca5a5]' : 'text-[#20B8B0]'
+            }`}
+          >
+            {submittedAlert.type === 'error' ? 'error' : 'verified'}
+          </span>
+          <span>{submittedAlert.message}</span>
         </div>
       )}
 
@@ -208,7 +347,17 @@ export const HumanReviewPage: React.FC = () => {
                   <h2 className="text-xl font-bold text-[#0d3d3a]">
                     Case #{selectedCase.caseRef.replace('#', '') || selectedCase.id}
                   </h2>
-                  <span className="px-2.5 py-0.5 rounded-full bg-[#ecfdf5] text-[#166534] text-xs font-semibold border border-[#bbf7d0]">
+                  <span
+                    className={`px-2.5 py-0.5 rounded-full text-xs font-semibold border ${
+                      selectedCase.decisionStatus === 'Ready for Payout' || selectedCase.decisionStatus === 'Approved'
+                        ? 'bg-[#ecfdf5] text-[#166534] border-[#bbf7d0]'
+                        : selectedCase.decisionStatus === 'Awaiting Carrier Evidence'
+                        ? 'bg-[#fffbeb] text-[#92400e] border-[#fde68a]'
+                        : selectedCase.decisionStatus === 'Flagged' || selectedCase.decisionStatus === 'Rejected'
+                        ? 'bg-[#fef2f2] text-[#991b1b] border-[#fecaca]'
+                        : 'bg-[#e8f2f0] text-[#0d6b63] border-[#d0dfd3]'
+                    }`}
+                  >
                     {selectedCase.decisionStatus}
                   </span>
                 </div>
@@ -334,31 +483,66 @@ export const HumanReviewPage: React.FC = () => {
                   </div>
                 </label>
 
-                <label className="flex items-start gap-3 p-3 rounded-lg border border-[#e3ded4] hover:bg-[#fbf9f4] cursor-pointer">
-                  <input
-                    type="radio"
-                    name="decision"
-                    value="adjusted"
-                    checked={decision === 'adjusted'}
-                    onChange={() => setDecision('adjusted')}
-                    className="mt-0.5 accent-[#0d6b63]"
-                  />
-                  <div>
-                    <span className="font-bold text-[#0d3d3a] block">
-                      Submit with adjusted estimate
-                    </span>
-                    <span className="text-[#5c6967]">
-                      Enter a different estimate below before submitting.
-                    </span>
-                  </div>
-                </label>
+                <div
+                  className={`p-3 rounded-lg border transition-all ${
+                    decision === 'adjusted' ? 'bg-[#fbf9f4] border-[#0d6b63]' : 'border-[#e3ded4] hover:bg-[#fbf9f4]'
+                  }`}
+                >
+                  <label className="flex items-start gap-3 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="decision"
+                      value="adjusted"
+                      checked={decision === 'adjusted'}
+                      onChange={() => setDecision('adjusted')}
+                      className="mt-0.5 accent-[#0d6b63]"
+                    />
+                    <div>
+                      <span className="font-bold text-[#0d3d3a] block">
+                        Submit with adjusted estimate
+                      </span>
+                      <span className="text-[#5c6967]">
+                        Enter a different estimate below before submitting.
+                      </span>
+                    </div>
+                  </label>
+                  {decision === 'adjusted' && (
+                    <div className="mt-2.5 ml-7 space-y-1.5 pt-2 border-t border-[#e3ded4]">
+                      <div className="flex items-center justify-between">
+                        <label className="text-[11px] font-bold text-[#0d3d3a]">
+                          Adjusted Amount (INR)
+                        </label>
+                        <span className="text-[10px] text-[#5c6967]">
+                          Max: {selectedCase.claimAmountFormatted}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-1.5 max-w-xs">
+                        <span className="text-xs font-bold text-[#5c6967]">₹</span>
+                        <input
+                          type="number"
+                          min="1"
+                          max={selectedCase.claimAmount}
+                          value={adjustedAmount}
+                          onChange={(e) => setAdjustedAmount(e.target.value)}
+                          placeholder="e.g. 15000"
+                          className="w-full border border-[#e3ded4] rounded-md px-2.5 py-1.5 text-xs font-mono text-[#0d3d3a] focus:outline-none focus:border-[#0d6b63] bg-white"
+                        />
+                      </div>
+                      {isAdjustedInvalid && (
+                        <p className="text-[10px] text-[#991b1b] font-medium">
+                          Please enter an amount between ₹1 and {selectedCase.claimAmountFormatted}.
+                        </p>
+                      )}
+                    </div>
+                  )}
+                </div>
 
                 <label className="flex items-start gap-3 p-3 rounded-lg border border-[#e3ded4] hover:bg-[#fbf9f4] cursor-pointer">
                   <input
                     type="radio"
                     name="decision"
                     value="docs"
-                    checked={decision === 'docs'}
+                    checked={decision === 'docs' || decision === 'more_docs'}
                     onChange={() => setDecision('docs')}
                     className="mt-0.5 accent-[#0d6b63]"
                   />
@@ -413,22 +597,30 @@ export const HumanReviewPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={handleConfirmSubmit}
-                  className="bg-[#0d6b63] text-white px-5 py-2.5 rounded-md text-xs font-semibold hover:bg-[#0a534d] transition-colors shadow-sm"
+                  disabled={!reviewerNote.trim() || isAdjustedInvalid || isSubmitting || isSavingDraft}
+                  className="bg-[#0d6b63] text-white px-5 py-2.5 rounded-md text-xs font-semibold hover:bg-[#0a534d] transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  Confirm and submit
+                  {isSubmitting ? 'Submitting…' : 'Confirm and submit'}
                 </button>
                 <button
                   type="button"
                   onClick={handleSaveDraft}
-                  disabled={isSavingDraft}
+
+                  disabled={isSavingDraft || isSubmitting}
                   className="bg-white border border-[#e3ded4] text-[#0d3d3a] px-4 py-2.5 rounded-md text-xs font-semibold hover:bg-[#f7f4ed] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
+                  {isSavingDraft ? 'Saving draft…' : 'Save as draft'}
+
+                  disabled={isSavingDraft}
+                  className="bg-white border border-[#e3ded4] text-[#0d3d3a] px-4 py-2.5 rounded-md text-xs font-semibold hover:bg-[#f7f4ed] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                
                   {isSavingDraft ? 'Saving…' : 'Save as draft'}
                 </button>
                 <button
                   type="button"
                   onClick={handleEscalate}
-                  className="bg-white border border-[#e3ded4] text-[#991b1b] px-4 py-2.5 rounded-md text-xs font-semibold hover:bg-[#fee2e2]/40 transition-colors"
+                  disabled={isSubmitting || isSavingDraft}
+                  className="bg-white border border-[#e3ded4] text-[#991b1b] px-4 py-2.5 rounded-md text-xs font-semibold hover:bg-[#fee2e2]/40 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Escalate to senior reviewer
                 </button>

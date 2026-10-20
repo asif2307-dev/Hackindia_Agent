@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { SiteHeader } from '../components/layout/SiteHeader';
 import { SiteFooter } from '../components/layout/SiteFooter';
 
 type AccountTab = 'profile' | 'travellers' | 'payment' | 'notifications' | 'security';
 
 export const SettingsPage: React.FC = () => {
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<AccountTab>('profile');
 
   // Form State
@@ -27,6 +28,15 @@ export const SettingsPage: React.FC = () => {
     e.preventDefault();
     setSavedAlert(true);
     setTimeout(() => setSavedAlert(false), 3000);
+  };
+
+  const handleSignOut = () => {
+    sessionStorage.removeItem('agent_travel_user');
+    sessionStorage.removeItem('agent_travel_token');
+    localStorage.removeItem('agent_travel_user');
+    localStorage.removeItem('agent_travel_token');
+    fetch('/api/auth/logout', { method: 'POST' }).catch(() => {});
+    navigate('/signin');
   };
 
   return (
@@ -149,7 +159,8 @@ export const SettingsPage: React.FC = () => {
               <div className="pt-3 border-t border-[#f0ebe1]">
                 <button
                   type="button"
-                  className="w-full text-left px-3 py-2 rounded-md text-[#991b1b] hover:bg-[#fee2e2]/40 transition-colors flex items-center gap-2.5"
+                  onClick={handleSignOut}
+                  className="w-full text-left px-3 py-2 rounded-md text-[#991b1b] hover:bg-[#fee2e2]/40 transition-colors flex items-center gap-2.5 cursor-pointer"
                 >
                   <span className="material-symbols-outlined text-[18px]">logout</span>
                   Log out
