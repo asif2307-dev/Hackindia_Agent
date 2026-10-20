@@ -14,6 +14,8 @@ const __dirname = path.dirname(__filename);
 const DATA_DIR = path.join(__dirname, 'data');
 const DATA_FILE = path.join(DATA_DIR, 'store.json');
 
+const getDataFile = () => process.env.DATA_STORE_PATH || DATA_FILE;
+
 // Ensure data directory exists
 if (!fs.existsSync(DATA_DIR)) {
   fs.mkdirSync(DATA_DIR, { recursive: true });
@@ -25,19 +27,22 @@ let store = {
   orders: {},
   payments: {},
   processedWebhooks: {},
+  refunds: {},
 };
 
 // Load existing data if available
 const loadStore = () => {
   try {
-    if (fs.existsSync(DATA_FILE)) {
-      const content = fs.readFileSync(DATA_FILE, 'utf-8');
+    const file = getDataFile();
+    if (fs.existsSync(file)) {
+      const content = fs.readFileSync(file, 'utf-8');
       const parsed = JSON.parse(content);
       store = {
         bookings: parsed.bookings || {},
         orders: parsed.orders || {},
         payments: parsed.payments || {},
         processedWebhooks: parsed.processedWebhooks || {},
+        refunds: parsed.refunds || {},
       };
     }
   } catch (err) {
@@ -47,9 +52,18 @@ const loadStore = () => {
 
 const persistStore = () => {
   try {
-    const tmpFile = `${DATA_FILE}.tmp`;
+    const file = getDataFile();
+    const tmpFile = `${file}.tmp`;
     fs.writeFileSync(tmpFile, JSON.stringify(store, null, 2), 'utf-8');
-    fs.renameSync(tmpFile, DATA_FILE);
+    try {
+      fs.renameSync(tmpFile, file);
+    } catch {
+      // Resilient fallback on Windows if destination file is locked by OneDrive sync
+      fs.copyFileSync(tmpFile, file);
+      try {
+        fs.unlinkSync(tmpFile);
+      } catch {}
+    }
   } catch (err) {
     console.error('[DB] Failed to persist data to disk:', err.message);
   }
@@ -72,7 +86,19 @@ export const db = {
   },
 
   getBooking(bookingId) {
-    return store.bookings[bookingId] || null;
+    if (!bookingId) return null;
+    if (store.bookings[bookingId]) return store.bookings[bookingId];
+    const clean = bookingId.toString().trim().toLowerCase();
+    for (const b of Object.values(store.bookings)) {
+      if (
+        b.id.toLowerCase() === clean ||
+        (b.bookingDetails?.code && b.bookingDetails.code.toLowerCase() === clean) ||
+        (b.bookingDetails?.id && b.bookingDetails.id.toLowerCase() === clean)
+      ) {
+        return b;
+      }
+    }
+    return null;
   },
 
   listBookings() {
@@ -91,7 +117,7 @@ export const db = {
 
     const currentStatus = store.bookings[bookingId].paymentStatus;
     // Idempotency rule: Never downgrade a captured 'PAID' status to 'FAILED' or 'PENDING'
-    if (currentStatus === 'PAID' && paymentData.paymentStatus !== 'PAID') {
+    if (currentStatus === 'PAID' && paymentData.paymentStatus && paymentData.paymentStatus !== 'PAID') {
       console.warn(`[DB] Refusing to downgrade booking ${bookingId} from PAID to ${paymentData.paymentStatus}`);
       return store.bookings[bookingId];
     }
@@ -141,6 +167,82 @@ export const db = {
     return store.processedWebhooks[eventId];
   },
 
+  // --- Refunds ---
+  saveRefund(refund) {
+    if (!refund || !refund.id) throw new Error('Refund must have an id');
+    const existing = store.refunds[refund.id] || {};
+    store.refunds[refund.id] = {
+      ...existing,
+      ...refund,
+      updatedAt: new Date().toISOString(),
+    };
+    persistStore();
+    return store.refunds[refund.id];
+  },
+
+  getRefund(refundId) {
+    if (!refundId) return null;
+    if (store.refunds[refundId]) return store.refunds[refundId];
+    // Support lookup by caseRef or case-insensitive ID/bookingId/pnr
+    const clean = refundId.toString().replace(/^#/, '').trim().toLowerCase();
+    for (const r of Object.values(store.refunds)) {
+      if (
+        r.id.toLowerCase() === clean ||
+        (r.caseRef && r.caseRef.replace(/^#/, '').toLowerCase() === clean) ||
+        (r.bookingId && r.bookingId.toLowerCase() === clean) ||
+        (r.pnr && r.pnr.toLowerCase() === clean)
+      ) {
+        return r;
+      }
+    }
+    return null;
+  },
+
+  getRefundByBookingId(bookingId) {
+    if (!bookingId) return null;
+    const clean = bookingId.toString().trim().toLowerCase();
+    for (const r of Object.values(store.refunds)) {
+      if (
+        (r.bookingId && r.bookingId.toLowerCase() === clean) ||
+        (r.pnr && r.pnr.toLowerCase() === clean) ||
+        (r.id && r.id.toLowerCase() === clean)
+      ) {
+        return r;
+      }
+    }
+    // Also check if a booking exists with this ID and has an associated refundCaseId
+    const booking = this.getBooking(bookingId);
+    if (booking && booking.refundCaseId) {
+      const linked = this.getRefund(booking.refundCaseId);
+      if (linked) return linked;
+    }
+    return null;
+  },
+
+  listRefunds(filter = {}) {
+    let list = Object.values(store.refunds);
+    if (filter.status) {
+      list = list.filter((r) => r.status === filter.status || r.decisionStatus === filter.status);
+    }
+    if (filter.bookingId) {
+      list = list.filter((r) => r.bookingId === filter.bookingId);
+    }
+    return list;
+  },
+
+  updateRefund(refundId, updateData) {
+    const refund = this.getRefund(refundId);
+    if (!refund) return null;
+    const targetId = refund.id;
+    store.refunds[targetId] = {
+      ...store.refunds[targetId],
+      ...updateData,
+      updatedAt: new Date().toISOString(),
+    };
+    persistStore();
+    return store.refunds[targetId];
+  },
+
   // --- Reset/Clear (Useful for testing) ---
   _reset() {
     store = {
@@ -148,6 +250,7 @@ export const db = {
       orders: {},
       payments: {},
       processedWebhooks: {},
+      refunds: {},
     };
     persistStore();
   },

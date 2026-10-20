@@ -362,12 +362,31 @@ export const BookingsPage: React.FC = () => {
                     <span className="font-mono text-[#0d3d3a]">{selectedBookingDetails.razorpayOrderId}</span>
                   </div>
                 )}
+                {selectedBookingDetails.paymentVerifiedAt && (
+                  <div className="flex justify-between py-1 border-b border-[#f0ebe1]">
+                    <span className="text-[#889593]">Verified At</span>
+                    <span className="font-mono text-[#0d3d3a]">
+                      {new Date(selectedBookingDetails.paymentVerifiedAt).toLocaleString('en-IN', {
+                        dateStyle: 'medium',
+                        timeStyle: 'short',
+                      })}
+                    </span>
+                  </div>
+                )}
               </div>
 
-              <div className="pt-2 flex justify-end gap-2">
+              <div className="pt-2 flex justify-between items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => window.print()}
+                  className="border border-[#0d6b63] text-[#0d6b63] bg-white px-3.5 py-2 rounded-md text-xs font-semibold hover:bg-[#e8f2f0] transition-colors flex items-center gap-1.5"
+                >
+                  <span className="material-symbols-outlined text-[16px]">print</span>
+                  Print Receipt
+                </button>
                 <button
                   onClick={() => setSelectedBookingDetails(null)}
-                  className="bg-[#0d6b63] text-white px-4 py-2 rounded-md text-xs font-semibold hover:bg-[#0a534d]"
+                  className="bg-[#0d6b63] text-white px-5 py-2 rounded-md text-xs font-semibold hover:bg-[#0a534d] transition-colors"
                 >
                   Done
                 </button>
