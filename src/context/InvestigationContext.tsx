@@ -61,6 +61,8 @@ export const InvestigationProvider: React.FC<{ children: React.ReactNode }> = ({
                       reviewerDraftDecision: incoming.reviewerDraftDecision,
                       reviewerComment: incoming.reviewerComment || c.reviewerComment,
                       auditLog: incoming.auditLog || c.auditLog,
+                      approvedAmount: incoming.approvedAmount ?? (c as any).approvedAmount,
+                      decisionRecordedAt: incoming.decisionRecordedAt ?? (c as any).decisionRecordedAt,
                     };
                   }
                   return c;
@@ -86,35 +88,6 @@ export const InvestigationProvider: React.FC<{ children: React.ReactNode }> = ({
     };
 
     fetchBackendRefunds();
-
-  // Load backend refunds on mount and merge with in-memory cases
-  useEffect(() => {
-    const fetchRefunds = async () => {
-      try {
-        let res: Response | null = null;
-        try {
-          res = await fetch('/api/refunds');
-        } catch {
-          res = await fetch('http://localhost:5001/api/refunds');
-        }
-        if (res && res.ok) {
-          const data = await res.json();
-          if (Array.isArray(data.refunds) && data.refunds.length > 0) {
-            setCases((prev) => {
-              const incomingMap = new Map(data.refunds.map((r: any) => [r.id.toLowerCase(), r]));
-              // Update existing cases with latest backend data
-              const updated = prev.map((c) => incomingMap.get(c.id.toLowerCase()) || c);
-              // Prepend any new refunds not yet in state
-              const existingIds = new Set(prev.map((c) => c.id.toLowerCase()));
-              const brandNew = data.refunds.filter((r: any) => !existingIds.has(r.id.toLowerCase()));
-              return [...brandNew, ...updated];
-            });
-          }
-        }
-      } catch {}
-    };
-    fetchRefunds();
- 
   }, []);
 
   const selectedCase =
@@ -123,11 +96,7 @@ export const InvestigationProvider: React.FC<{ children: React.ReactNode }> = ({
         c.id.toLowerCase() === selectedCaseId.toLowerCase() ||
         c.caseRef.toLowerCase().replace('#', '') === selectedCaseId.toLowerCase().replace('#', '') ||
         c.pnr.toLowerCase() === selectedCaseId.toLowerCase() ||
-
         ((c as any).bookingId && String((c as any).bookingId).toLowerCase() === selectedCaseId.toLowerCase())
-
-        (c.bookingId && c.bookingId.toLowerCase() === selectedCaseId.toLowerCase())
-
     ) ||
     cases[0] ||
     primaryCaseAT9842;
@@ -269,36 +238,6 @@ export const InvestigationProvider: React.FC<{ children: React.ReactNode }> = ({
       return { success: false, error: res.error };
     }
 
-
-  const postDecisionToBackend = async (id: string, decision: string, note?: string) => {
-    try {
-      await fetch(`/api/refunds/${id}/decision`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          decision,
-          reviewerComment: note || 'Decision recorded by Lead Auditor',
-          reviewerId: 'Julian Hayes (Lead Auditor)',
-        }),
-      });
-    } catch {
-      try {
-        await fetch(`http://localhost:5001/api/refunds/${id}/decision`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            decision,
-            reviewerComment: note || 'Decision recorded by Lead Auditor',
-            reviewerId: 'Julian Hayes (Lead Auditor)',
-          }),
-        });
-      } catch {}
-    }
-  };
-
-  const approveRefund = (id: string, comment?: string) => {
-    postDecisionToBackend(id, 'APPROVE', comment);
-
     setCases((prev) =>
       prev.map((c) => {
         if (c.id === id || c.caseRef.replace('#', '') === id.replace('#', '')) {
@@ -315,6 +254,8 @@ export const InvestigationProvider: React.FC<{ children: React.ReactNode }> = ({
             claimAmount: finalAmount,
             claimAmountFormatted: finalFormatted,
             decisionStatus: 'Approved' as const,
+            approvedAmount: res.refund?.approvedAmount ?? finalAmount,
+            decisionRecordedAt: res.refund?.decisionRecordedAt ?? new Date().toISOString(),
             finalDecision: isAdjusted
               ? `Approved with Adjusted Amount (${finalFormatted}) by Lead Auditor Julian Hayes`
               : 'Approved by Lead Auditor Julian Hayes',
@@ -341,7 +282,6 @@ export const InvestigationProvider: React.FC<{ children: React.ReactNode }> = ({
     return { success: true };
   };
 
-
   const requestManualReview = async (id: string, comment?: string, isEscalation = false): Promise<{ success: boolean; error?: string }> => {
     const cleanComment = comment || (isEscalation ? 'Escalated to Senior Audit Review Desk' : 'Dispatched for manual airline carrier liaison verification.');
     const decisionCode = isEscalation ? 'ESCALATE' : 'REQUEST_INFO';
@@ -349,10 +289,6 @@ export const InvestigationProvider: React.FC<{ children: React.ReactNode }> = ({
     if (!res.success) {
       return { success: false, error: res.error };
     }
-
-
-  const requestManualReview = (id: string, comment?: string) => {
-    postDecisionToBackend(id, 'REQUEST_INFO', comment);
 
     setCases((prev) =>
       prev.map((c) => {
@@ -384,17 +320,12 @@ export const InvestigationProvider: React.FC<{ children: React.ReactNode }> = ({
     return { success: true };
   };
 
-
   const rejectRecommendation = async (id: string, reason: string): Promise<{ success: boolean; error?: string }> => {
     const cleanReason = reason.trim() || 'Claim rejected following human auditor review.';
     const res = await sendDecisionToBackend(id, 'REJECT', cleanReason);
     if (!res.success) {
       return { success: false, error: res.error };
     }
-
-
-  const rejectRecommendation = (id: string, reason: string) => {
-    postDecisionToBackend(id, 'REJECT', reason);
 
     setCases((prev) =>
       prev.map((c) => {

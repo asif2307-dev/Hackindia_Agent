@@ -17,10 +17,6 @@ export const HumanReviewPage: React.FC = () => {
   const [isSavingDraft, setIsSavingDraft] = useState<boolean>(false);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
-  const [reviewerNote, setReviewerNote] = useState<string>('');
-  const [isSavingDraft, setIsSavingDraft] = useState<boolean>(false);
-  const [submittedAlert, setSubmittedAlert] = useState<string | null>(null);
-
 
   // Filter cases relevant for human review queue
   const reviewQueue = cases.filter(
@@ -84,6 +80,26 @@ export const HumanReviewPage: React.FC = () => {
     parsedAdjusted <= 0 ||
     parsedAdjusted > selectedCase.claimAmount
   );
+
+  // Finalized statuses: decision form is locked — reviewer cannot act further
+  const isFinalized =
+    selectedCase.decisionStatus === 'Approved' ||
+    selectedCase.decisionStatus === 'Ready for Payout' ||
+    selectedCase.decisionStatus === 'Disbursed';
+
+  const approvedAmount: number | undefined = (selectedCase as any).approvedAmount;
+  const approvedAmountFormatted =
+    approvedAmount != null && approvedAmount > 0
+      ? `₹${approvedAmount.toLocaleString('en-IN')}`
+      : selectedCase.claimAmountFormatted;
+
+  const decisionRecordedAt: string | undefined = (selectedCase as any).decisionRecordedAt;
+  const decisionTimestamp = decisionRecordedAt
+    ? new Date(decisionRecordedAt).toLocaleString('en-IN', {
+        day: '2-digit', month: 'short', year: 'numeric',
+        hour: '2-digit', minute: '2-digit',
+      })
+    : undefined;
 
   const handleConfirmSubmit = async () => {
     const caseLabel = selectedCase.caseRef.replace('#', '') || selectedCase.id;
@@ -150,34 +166,9 @@ export const HumanReviewPage: React.FC = () => {
       setSubmittedAlert({ type: 'success', message: `Draft note saved for Case #${caseLabel}.` });
     } else {
       setSubmittedAlert({ type: 'error', message: `Failed to save draft for Case #${caseLabel}: ${res.error || 'Server error'}` });
-
-  // Restore draft note from backend when the selected case changes
-  useEffect(() => {
-    if (selectedCase?.reviewerDraftNote) {
-      setReviewerNote(selectedCase.reviewerDraftNote);
-    } else if (selectedCase?.reviewerComment) {
-      setReviewerNote(selectedCase.reviewerComment);
-    } else {
-      setReviewerNote('');
-    }
-  }, [selectedCase?.id]);
-
-  const handleConfirmSubmit = () => {
-    const caseLabel = selectedCase.caseRef.replace('#', '') || selectedCase.id;
-    if (decision === 'eligible') {
-      approveRefund(selectedCase.id, reviewerNote);
-      setSubmittedAlert(`Case #${caseLabel} approved! Refund payout authorization recorded in audit ledger.`);
-    } else if (decision === 'more_docs') {
-      requestManualReview(selectedCase.id, reviewerNote);
-      setSubmittedAlert(`Case #${caseLabel} marked for additional document verification.`);
-    } else {
-      rejectRecommendation(selectedCase.id, reviewerNote || 'Claim rejected following human auditor review.');
-      setSubmittedAlert(`Case #${caseLabel} closed as not eligible. Finding recorded.`);
-
     }
     setTimeout(() => setSubmittedAlert(null), 3500);
   };
-
 
   const handleEscalate = async () => {
     const caseLabel = selectedCase.caseRef.replace('#', '') || selectedCase.id;
@@ -190,53 +181,6 @@ export const HumanReviewPage: React.FC = () => {
     } else {
       setSubmittedAlert({ type: 'error', message: `Failed to escalate Case #${caseLabel}: ${res.error || 'Server error'}` });
     }
-
-  const handleSaveDraft = async () => {
-    const caseLabel = selectedCase.caseRef.replace('#', '') || selectedCase.id;
-    if (!reviewerNote.trim()) {
-      setSubmittedAlert('Please enter a reviewer note before saving as draft.');
-      setTimeout(() => setSubmittedAlert(null), 3000);
-      return;
-    }
-    setIsSavingDraft(true);
-    try {
-      const payload = {
-        reviewerNote: reviewerNote.trim(),
-        draftDecision: decision,
-        reviewerId: 'Julian Hayes (Lead Auditor)',
-      };
-      let res: Response | null = null;
-      try {
-        res = await fetch(`/api/refunds/${selectedCase.id}/draft`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload),
-        });
-      } catch {
-        res = await fetch(`http://localhost:5001/api/refunds/${selectedCase.id}/draft`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload),
-        });
-      }
-      if (res && res.ok) {
-        setSubmittedAlert(`Draft note saved for Case #${caseLabel}.`);
-      } else {
-        setSubmittedAlert(`Draft note saved locally for Case #${caseLabel}.`);
-      }
-    } catch {
-      setSubmittedAlert(`Draft note saved locally for Case #${caseLabel}.`);
-    } finally {
-      setIsSavingDraft(false);
-      setTimeout(() => setSubmittedAlert(null), 3000);
-    }
-  };
-
-  const handleEscalate = () => {
-    const caseLabel = selectedCase.caseRef.replace('#', '') || selectedCase.id;
-    requestManualReview(selectedCase.id, `Escalated to Senior Audit Reviewer: ${reviewerNote}`);
-    setSubmittedAlert(`Case #${caseLabel} escalated to Senior Review Desk.`);
-
     setTimeout(() => setSubmittedAlert(null), 3500);
   };
 
@@ -388,8 +332,12 @@ export const HumanReviewPage: React.FC = () => {
                 <span className="font-semibold text-[#0d3d3a]">{selectedCase.traveler.name}</span>
               </div>
               <div>
-                <span className="text-[10px] text-[#889593] font-bold uppercase block">Claim Amount</span>
-                <span className="font-bold text-[#0d6b63]">{selectedCase.claimAmountFormatted}</span>
+                <span className="text-[10px] text-[#889593] font-bold uppercase block">
+                  {isFinalized ? 'Authorised Amount' : 'Claim Amount'}
+                </span>
+                <span className={`font-bold ${isFinalized ? 'text-[#166534]' : 'text-[#0d6b63]'}`}>
+                  {isFinalized ? approvedAmountFormatted : selectedCase.claimAmountFormatted}
+                </span>
               </div>
             </div>
 
@@ -457,8 +405,82 @@ export const HumanReviewPage: React.FC = () => {
               </div>
             </div>
 
-            {/* Reviewer Decision Radio Form (Page 11) */}
-            <div className="space-y-4 pt-3 border-t border-[#e3ded4]">
+            {/* Payout / Disbursement Status Panel — shown when case is finalized */}
+            {isFinalized && (
+              <div
+                className={`p-5 rounded-xl border-2 space-y-3 ${
+                  selectedCase.decisionStatus === 'Disbursed'
+                    ? 'bg-[#ecfdf5] border-[#bbf7d0]'
+                    : selectedCase.decisionStatus === 'Ready for Payout'
+                    ? 'bg-[#fffbeb] border-[#fde68a]'
+                    : 'bg-[#ecfdf5] border-[#bbf7d0]'
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <div
+                    className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${
+                      selectedCase.decisionStatus === 'Disbursed'
+                        ? 'bg-[#166534] text-white'
+                        : selectedCase.decisionStatus === 'Ready for Payout'
+                        ? 'bg-[#92400e] text-white'
+                        : 'bg-[#166534] text-white'
+                    }`}
+                  >
+                    <span className="material-symbols-outlined text-[20px]">
+                      {selectedCase.decisionStatus === 'Disbursed' ? 'payments' : 'check_circle'}
+                    </span>
+                  </div>
+                  <div>
+                    <h3 className={`text-sm font-bold ${
+                      selectedCase.decisionStatus === 'Disbursed' ? 'text-[#166534]' : 'text-[#0d3d3a]'
+                    }`}>
+                      {selectedCase.decisionStatus === 'Disbursed'
+                        ? 'Refund Disbursed'
+                        : selectedCase.decisionStatus === 'Ready for Payout'
+                        ? 'Ready for Payout — Awaiting Disbursement'
+                        : 'Refund Approved — Pending Payout'}
+                    </h3>
+                    <p className="text-xs text-[#5c6967] mt-0.5">
+                      {selectedCase.decisionStatus === 'Disbursed'
+                        ? "Payment has been released to the traveller's original account."
+                        : 'The claim has been authorized. Payout will be processed by the payments team.'}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 pt-2 border-t border-white/60 text-xs">
+                  <div>
+                    <span className="text-[10px] font-bold uppercase text-[#5c6967] block">Authorized Amount</span>
+                    <span className="font-bold text-[#166534] text-sm">{approvedAmountFormatted}</span>
+                  </div>
+                  <div>
+                    <span className="text-[10px] font-bold uppercase text-[#5c6967] block">Status</span>
+                    <span className="font-semibold text-[#0d3d3a]">{selectedCase.decisionStatus}</span>
+                  </div>
+                  {selectedCase.assignedAuditor && (
+                    <div>
+                      <span className="text-[10px] font-bold uppercase text-[#5c6967] block">Authorized by</span>
+                      <span className="font-semibold text-[#0d3d3a]">{selectedCase.assignedAuditor}</span>
+                    </div>
+                  )}
+                  {decisionTimestamp && (
+                    <div className="col-span-2 sm:col-span-3">
+                      <span className="text-[10px] font-bold uppercase text-[#5c6967] block">Decision recorded</span>
+                      <span className="font-semibold text-[#0d3d3a] font-mono text-[11px]">{decisionTimestamp}</span>
+                    </div>
+                  )}
+                  {selectedCase.reviewerComment && (
+                    <div className="col-span-2 sm:col-span-3">
+                      <span className="text-[10px] font-bold uppercase text-[#5c6967] block">Reviewer note</span>
+                      <p className="text-[#42504e] leading-relaxed mt-0.5">{selectedCase.reviewerComment}</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Reviewer Decision Radio Form (Page 11) — hidden when case is finalized */}
+            <div className={`space-y-4 pt-3 border-t border-[#e3ded4] ${isFinalized ? 'hidden' : ''}`}>
               <h3 className="text-sm font-bold text-[#0d3d3a]">
                 Reviewer decision
               </h3>
@@ -605,16 +627,10 @@ export const HumanReviewPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={handleSaveDraft}
-
                   disabled={isSavingDraft || isSubmitting}
                   className="bg-white border border-[#e3ded4] text-[#0d3d3a] px-4 py-2.5 rounded-md text-xs font-semibold hover:bg-[#f7f4ed] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {isSavingDraft ? 'Saving draft…' : 'Save as draft'}
-
-                  disabled={isSavingDraft}
-                  className="bg-white border border-[#e3ded4] text-[#0d3d3a] px-4 py-2.5 rounded-md text-xs font-semibold hover:bg-[#f7f4ed] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                
-                  {isSavingDraft ? 'Saving…' : 'Save as draft'}
                 </button>
                 <button
                   type="button"
