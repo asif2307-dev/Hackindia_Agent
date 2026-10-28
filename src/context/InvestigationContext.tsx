@@ -96,7 +96,9 @@ export const InvestigationProvider: React.FC<{ children: React.ReactNode }> = ({
         c.id.toLowerCase() === selectedCaseId.toLowerCase() ||
         c.caseRef.toLowerCase().replace('#', '') === selectedCaseId.toLowerCase().replace('#', '') ||
         c.pnr.toLowerCase() === selectedCaseId.toLowerCase() ||
-        ((c as any).bookingId && String((c as any).bookingId).toLowerCase() === selectedCaseId.toLowerCase())
+
+        (Boolean((c as any).bookingId) && String((c as any).bookingId).toLowerCase() === selectedCaseId.toLowerCase())
+
     ) ||
     cases[0] ||
     primaryCaseAT9842;
@@ -231,7 +233,11 @@ export const InvestigationProvider: React.FC<{ children: React.ReactNode }> = ({
     return { success: false, error: lastError };
   };
 
-  const approveRefund = async (id: string, comment?: string, adjustedAmount?: number): Promise<{ success: boolean; error?: string }> => {
+  const approveRefund = async (
+    id: string,
+    comment?: string,
+    adjustedAmount?: number
+  ): Promise<{ success: boolean; error?: string }> => {
     const cleanComment = comment || 'Refund authorized following full evidence verification.';
     const res = await sendDecisionToBackend(id, 'APPROVE', cleanComment, adjustedAmount);
     if (!res.success) {
@@ -282,7 +288,13 @@ export const InvestigationProvider: React.FC<{ children: React.ReactNode }> = ({
     return { success: true };
   };
 
-  const requestManualReview = async (id: string, comment?: string, isEscalation = false): Promise<{ success: boolean; error?: string }> => {
+
+  const requestManualReview = async (
+    id: string,
+    comment?: string,
+    isEscalation = false
+  ): Promise<{ success: boolean; error?: string }> => {
+
     const cleanComment = comment || (isEscalation ? 'Escalated to Senior Audit Review Desk' : 'Dispatched for manual airline carrier liaison verification.');
     const decisionCode = isEscalation ? 'ESCALATE' : 'REQUEST_INFO';
     const res = await sendDecisionToBackend(id, decisionCode, cleanComment);
@@ -320,7 +332,12 @@ export const InvestigationProvider: React.FC<{ children: React.ReactNode }> = ({
     return { success: true };
   };
 
-  const rejectRecommendation = async (id: string, reason: string): Promise<{ success: boolean; error?: string }> => {
+
+  const rejectRecommendation = async (
+    id: string,
+    reason: string
+  ): Promise<{ success: boolean; error?: string }> => {
+
     const cleanReason = reason.trim() || 'Claim rejected following human auditor review.';
     const res = await sendDecisionToBackend(id, 'REJECT', cleanReason);
     if (!res.success) {

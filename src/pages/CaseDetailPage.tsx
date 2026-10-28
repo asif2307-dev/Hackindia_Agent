@@ -93,22 +93,20 @@ export const CaseDetailPage: React.FC = () => {
 
   // Download official case arbitration dossier as actual file
   const handleDownload = async () => {
-    if (!currentCase) return;
-    const activeCaseId = currentCase.caseRef.replace('#', '') || currentCase.id;
     try {
-      const res = await fetch(`/api/cases/${activeCaseId}/summary`);
+      const res = await fetch(`/api/cases/${displayCaseId}/summary`);
       let textContent = '';
       if (res.ok) {
         textContent = await res.text();
       } else {
-        textContent = `Case Summary Dossier for #${activeCaseId}\nStatus: ${currentCase.decisionStatus}\nCarrier: ${currentCase.carrier.name}\nClaim: ${currentCase.claimAmountFormatted}\nVerified DGCA Mandate Compliance.`;
+        textContent = `Case Summary Dossier for #${displayCaseId}\nStatus: ${currentCase?.decisionStatus || 'Active'}\nCarrier: ${currentCase?.carrier?.name || 'Carrier'}\nClaim: ${currentCase?.claimAmountFormatted || 'N/A'}\nVerified DGCA Mandate Compliance.`;
       }
 
       const blob = new Blob([textContent], { type: 'text/plain;charset=utf-8' });
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = `Case_${activeCaseId}_Summary.txt`;
+      link.download = `Case_${displayCaseId}_Summary.txt`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -131,8 +129,7 @@ export const CaseDetailPage: React.FC = () => {
   // Real secure evidence file upload
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file || !currentCase) return;
-    const activeCaseId = currentCase.caseRef.replace('#', '') || currentCase.id;
+    if (!file) return;
 
     // Reset input so re-selecting same file triggers change
     e.target.value = '';
@@ -162,7 +159,7 @@ export const CaseDetailPage: React.FC = () => {
         // Call backend evidence upload endpoint
         let fileId = `ev_${Date.now()}`;
         try {
-          const res = await fetch(`/api/cases/${activeCaseId}/evidence`, {
+          const res = await fetch(`/api/cases/${displayCaseId}/evidence`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -257,31 +254,8 @@ export const CaseDetailPage: React.FC = () => {
   }
 
   const displayCaseId = currentCase.caseRef.replace('#', '') || currentCase.id;
-  const isFinalized =
-    currentCase.decisionStatus === 'Approved' ||
-    currentCase.decisionStatus === 'Ready for Payout' ||
-    currentCase.decisionStatus === 'Disbursed';
-  const isApprovedOrDisbursed = isFinalized;
+  const isApprovedOrDisbursed = currentCase.decisionStatus === 'Approved' || currentCase.decisionStatus === 'Disbursed';
   const isRejected = currentCase.decisionStatus === 'Rejected';
-
-  const approvedAmount = (currentCase as any).approvedAmount;
-  const approvedAmountFormatted =
-    approvedAmount != null && approvedAmount > 0
-      ? `₹${Number(approvedAmount).toLocaleString('en-IN')}`
-      : currentCase.claimAmountFormatted;
-  const decisionRecordedAt = (currentCase as any).decisionRecordedAt;
-  const decisionTimestamp = decisionRecordedAt
-    ? (() => {
-        try {
-          return new Date(decisionRecordedAt).toLocaleString('en-IN', {
-            dateStyle: 'medium',
-            timeStyle: 'short',
-          });
-        } catch {
-          return String(decisionRecordedAt);
-        }
-      })()
-    : null;
 
   return (
     <div className="min-h-screen bg-[#f7f4ed] flex flex-col font-sans text-[#192524] antialiased">
@@ -568,71 +542,19 @@ export const CaseDetailPage: React.FC = () => {
             {/* POTENTIAL REFUND ESTIMATE Card (Page 10) */}
             <div className="bg-[#f0ebe1] rounded-xl border border-[#e3ded4] p-6 shadow-sm space-y-2">
               <span className="text-[11px] font-bold text-[#0d6b63] uppercase tracking-wider block">
-                {isFinalized ? 'Authorized Refund Amount' : 'Potential Refund Estimate'}
+                Potential Refund Estimate
               </span>
               <div className="text-3xl sm:text-4xl font-bold text-[#0d3d3a]">
-                {isFinalized ? approvedAmountFormatted : currentCase.claimAmountFormatted}
+                {currentCase.claimAmountFormatted}
               </div>
               <p className="text-xs text-[#5c6967] leading-relaxed pt-1">
-                {isFinalized
-                  ? 'Authorized by auditor. Queued for provider disbursement.'
-                  : currentCase.recommendedAction}
+                {currentCase.recommendedAction}
               </p>
               <div className="pt-2 border-t border-[#e3ded4] flex items-center justify-between text-xs text-[#6b7775]">
-                <span>{isFinalized ? 'Status:' : 'AI Confidence:'}</span>
-                <span className="font-bold text-[#0d6b63]">
-                  {isFinalized ? currentCase.decisionStatus : `${currentCase.aiConfidence}%`}
-                </span>
+                <span>AI Confidence:</span>
+                <span className="font-bold text-[#0d6b63]">{currentCase.aiConfidence}%</span>
               </div>
             </div>
-
-            {/* Payout & Disbursement Status Panel (surfaced for finalized cases) */}
-            {isFinalized && (
-              <div className="bg-[#ecfdf5] rounded-xl border border-[#bbf7d0] p-5 shadow-sm space-y-3">
-                <div className="flex items-center gap-2.5">
-                  <span className="material-symbols-outlined text-[20px] text-[#166534]">
-                    {currentCase.decisionStatus === 'Disbursed' ? 'payments' : 'task_alt'}
-                  </span>
-                  <div>
-                    <h4 className="text-xs font-bold text-[#166534]">
-                      {currentCase.decisionStatus === 'Disbursed'
-                        ? 'Refund Disbursed'
-                        : currentCase.decisionStatus === 'Ready for Payout'
-                        ? 'Ready for Payout'
-                        : 'Refund Authorized'}
-                    </h4>
-                    <p className="text-[11px] text-[#166534]/80">
-                      {currentCase.decisionStatus === 'Disbursed'
-                        ? 'Payment released to traveller\'s original payment method.'
-                        : 'Claim approved by auditor; queued for payout processing.'}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="pt-2 border-t border-[#bbf7d0]/60 space-y-2 text-xs">
-                  <div className="flex justify-between">
-                    <span className="text-[#166534]/80">Authorized Amount</span>
-                    <span className="font-bold text-[#166534]">{approvedAmountFormatted}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-[#166534]/80">Status</span>
-                    <span className="font-semibold text-[#166534]">{currentCase.decisionStatus}</span>
-                  </div>
-                  {decisionTimestamp && (
-                    <div className="flex justify-between">
-                      <span className="text-[#166534]/80">Decision Date</span>
-                      <span className="font-mono text-[11px] text-[#166534]">{decisionTimestamp}</span>
-                    </div>
-                  )}
-                  {currentCase.reviewerComment && (
-                    <div className="pt-1.5 text-[11px] text-[#166534]/90 border-t border-[#bbf7d0]/40">
-                      <span className="font-semibold block text-[10px] uppercase text-[#166534]/70">Auditor Note:</span>
-                      <p className="italic mt-0.5">{currentCase.reviewerComment}</p>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
 
             {/* Booking Details Card (Page 10) */}
             <div className="bg-white rounded-xl border border-[#e3ded4] p-6 shadow-sm space-y-4">
