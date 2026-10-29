@@ -47,3 +47,4 @@ Thumbs.db
 # Test-isolated data stores (cleaned by test runner, but guard against accidents)
 server/data/store.refund-test.json
 server/data/store.refund-test.json.tmp
+server/data/evidence/TEST-CASE-*/
